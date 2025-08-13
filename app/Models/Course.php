@@ -13,7 +13,7 @@ class Course extends Model
 
     protected $fillable = [
         'title', 'description', 'instructor_id', 'category_id', 
-        'thumbnail', 'price', 'status', 'start_date', 'end_date'
+        'thumbnail', 'price', 'status', 'start_date', 'end_date', 'slug', 'is_featured', 'is_free', 'is_active', 'meta_title', 'meta_description', 'meta_keywords','thumb_video_url', 'discound_price'
     ];
 
     protected $casts = [
