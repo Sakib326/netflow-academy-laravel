@@ -336,6 +336,8 @@ class CourseResource extends Resource
         return [
             RelationManagers\ModulesRelationManager::class,
             RelationManagers\BatchesRelationManager::class,
+            //add from moduleresourse
+            RelationManagers\LessonsRelationManager::class,
         ];
     }
 
