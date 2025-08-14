@@ -150,17 +150,17 @@ class CourseController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/courses/{id}",
-        summary: "Get course details",
+        path: "/api/courses/{slug}",
+        summary: "Get course details by slug",
         description: "Get detailed course information including modules, lessons, instructor, and reviews",
         tags: ["Courses"],
         parameters: [
             new OA\Parameter(
-                name: "id",
-                description: "Course ID",
+                name: "slug",
+                description: "Course slug",
                 in: "path",
                 required: true,
-                schema: new OA\Schema(type: "integer")
+                schema: new OA\Schema(type: "string", example: "introduction-to-laravel")
             )
         ],
         responses: [
@@ -175,7 +175,7 @@ class CourseController extends Controller
             )
         ]
     )]
-    public function show($id)
+    public function show($slug)
     {
         $course = Course::with([
             'category',
@@ -192,7 +192,8 @@ class CourseController extends Controller
         ])
         ->withCount(['enrollments', 'lessons', 'reviews'])
         ->where('is_active', true)
-        ->findOrFail($id);
+        ->where('slug', $slug)
+        ->firstOrFail();
 
         // Get only free lessons content
         $modules = $course->modules->map(function ($module) {

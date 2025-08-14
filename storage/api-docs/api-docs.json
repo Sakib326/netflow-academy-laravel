@@ -504,22 +504,23 @@
                 }
             }
         },
-        "/api/courses/{id}": {
+        "/api/courses/{slug}": {
             "get": {
                 "tags": [
                     "Courses"
                 ],
-                "summary": "Get course details",
+                "summary": "Get course details by slug",
                 "description": "Get detailed course information including modules, lessons, instructor, and reviews",
-                "operationId": "bd82915c39d2443dd443544603b03388",
+                "operationId": "f773f91f6921ba466a69fd5cb1b806e3",
                 "parameters": [
                     {
-                        "name": "id",
+                        "name": "slug",
                         "in": "path",
-                        "description": "Course ID",
+                        "description": "Course slug",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "example": "introduction-to-laravel"
                         }
                     }
                 ],

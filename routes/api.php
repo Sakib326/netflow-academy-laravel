@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/courses', [CourseController::class, 'index']);
-Route::get('/courses/{id}', [CourseController::class, 'show']);
+Route::get('/courses/{slug}', [CourseController::class, 'show']);
 Route::get('/categories', [CourseController::class, 'categories']);
 Route::get('/instructors', [CourseController::class, 'instructors']);
 Route::get('/reviews', [CourseController::class, 'reviews']);
