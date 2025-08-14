@@ -10,6 +10,23 @@ use Laravel\Sanctum\HasApiTokens;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
+    schema: "Instructor",
+    title: "Instructor",
+    description: "Instructor information",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "name", type: "string", example: "John Instructor"),
+        new OA\Property(property: "email", type: "string", format: "email", example: "instructor@example.com"),
+        new OA\Property(property: "avatar", type: "string", nullable: true, example: "http://example.com/storage/avatars/instructor1.jpg"),
+        new OA\Property(property: "bio", type: "string", example: "Instructor biography"),
+        new OA\Property(property: "role", type: "string", example: "instructor"),
+        new OA\Property(property: "total_courses", type: "integer", example: 5),
+        new OA\Property(property: "total_students", type: "integer", example: 250),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+    ]
+)]
+
+#[OA\Schema(
     schema: "User",
     title: "User",
     description: "User model",

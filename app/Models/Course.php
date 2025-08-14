@@ -6,6 +6,83 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use OpenApi\Attributes as OA;
+
+
+#[OA\Schema(
+    schema: "CourseList",
+    title: "Course List Item",
+    description: "Course information for list view",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "title", type: "string", example: "Web Development Fundamentals"),
+        new OA\Property(property: "slug", type: "string", example: "web-development-fundamentals"),
+        new OA\Property(property: "description", type: "string", example: "Learn the basics of web development"),
+        new OA\Property(property: "thumbnail", type: "string", nullable: true, example: "http://example.com/storage/thumbnails/course1.jpg"),
+        new OA\Property(property: "price", type: "number", format: "float", example: 99.99),
+        new OA\Property(property: "discounted_price", type: "number", format: "float", nullable: true, example: 79.99),
+        new OA\Property(property: "duration", type: "string", example: "8 weeks"),
+        new OA\Property(property: "level", type: "string", enum: ["beginner", "intermediate", "advanced"], example: "beginner"),
+        new OA\Property(property: "language", type: "string", example: "English"),
+        new OA\Property(property: "status", type: "string", example: "published"),
+        new OA\Property(property: "total_lessons", type: "integer", example: 25),
+        new OA\Property(property: "total_students", type: "integer", example: 150),
+        new OA\Property(property: "average_rating", type: "number", format: "float", example: 4.5),
+        new OA\Property(property: "total_reviews", type: "integer", example: 45),
+        new OA\Property(
+            property: "category",
+            properties: [
+                new OA\Property(property: "id", type: "integer", example: 1),
+                new OA\Property(property: "name", type: "string", example: "Web Development"),
+                new OA\Property(property: "slug", type: "string", example: "web-development"),
+            ]
+        ),
+        new OA\Property(
+            property: "instructor",
+            properties: [
+                new OA\Property(property: "id", type: "integer", example: 1),
+                new OA\Property(property: "name", type: "string", example: "John Instructor"),
+                new OA\Property(property: "avatar", type: "string", nullable: true, example: "http://example.com/storage/avatars/instructor1.jpg"),
+            ]
+        ),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+    ]
+)]
+#[OA\Schema(
+    schema: "CourseDetail",
+    title: "Course Detail",
+    description: "Detailed course information",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "title", type: "string", example: "Web Development Fundamentals"),
+        new OA\Property(property: "slug", type: "string", example: "web-development-fundamentals"),
+        new OA\Property(property: "description", type: "string", example: "Complete course description"),
+        new OA\Property(property: "short_description", type: "string", example: "Short course description"),
+        new OA\Property(property: "thumbnail", type: "string", nullable: true, example: "http://example.com/storage/thumbnails/course1.jpg"),
+        new OA\Property(property: "price", type: "number", format: "float", example: 99.99),
+        new OA\Property(property: "discounted_price", type: "number", format: "float", nullable: true, example: 79.99),
+        new OA\Property(property: "duration", type: "string", example: "8 weeks"),
+        new OA\Property(property: "level", type: "string", enum: ["beginner", "intermediate", "advanced"], example: "beginner"),
+        new OA\Property(property: "language", type: "string", example: "English"),
+        new OA\Property(property: "status", type: "string", example: "published"),
+        new OA\Property(property: "requirements", type: "array", items: new OA\Items(type: "string")),
+        new OA\Property(property: "what_you_will_learn", type: "array", items: new OA\Items(type: "string")),
+        new OA\Property(property: "total_lessons", type: "integer", example: 25),
+        new OA\Property(property: "total_students", type: "integer", example: 150),
+        new OA\Property(property: "average_rating", type: "number", format: "float", example: 4.5),
+        new OA\Property(property: "total_reviews", type: "integer", example: 45),
+        new OA\Property(property: "rating_distribution", type: "array", items: new OA\Items(
+            properties: [
+                new OA\Property(property: "rating", type: "integer", example: 5),
+                new OA\Property(property: "count", type: "integer", example: 25),
+                new OA\Property(property: "percentage", type: "number", format: "float", example: 55.6),
+            ]
+        )),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time"),
+    ]
+)]
 
 class Course extends Model
 {

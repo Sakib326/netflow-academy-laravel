@@ -401,10 +401,674 @@
                     }
                 ]
             }
+        },
+        "/api/courses": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Get paginated list of courses",
+                "description": "Get all active courses with pagination and basic information",
+                "operationId": "d452dd5ed2fa44f48bd98e5677e3cc3f",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (max 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "description": "Filter by category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Search in course title and description",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort by field",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "latest",
+                                "popular",
+                                "price_low",
+                                "price_high"
+                            ],
+                            "example": "latest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/CourseList"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 5
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 67
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/courses/{id}": {
+            "get": {
+                "tags": [
+                    "Courses"
+                ],
+                "summary": "Get course details",
+                "description": "Get detailed course information including modules, lessons, instructor, and reviews",
+                "operationId": "bd82915c39d2443dd443544603b03388",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Course ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CourseDetail"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Course not found"
+                    }
+                }
+            }
+        },
+        "/api/categories": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Get all categories",
+                "description": "Get all categories with course count",
+                "operationId": "f3ed972cfad1a74947a748ed55008b1c",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Category"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/instructors": {
+            "get": {
+                "tags": [
+                    "Instructors"
+                ],
+                "summary": "Get all instructors",
+                "description": "Get all active instructors with their statistics",
+                "operationId": "fdb6023019d3f8b8ef2192be3e1a3296",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Instructor"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reviews": {
+            "get": {
+                "tags": [
+                    "Reviews"
+                ],
+                "summary": "Get paginated reviews",
+                "description": "Get all course reviews with pagination",
+                "operationId": "0be9b2420570b26fbd09b26bb6d9bb53",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page (max 50)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "course_id",
+                        "in": "query",
+                        "description": "Filter by course ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "rating",
+                        "in": "query",
+                        "description": "Filter by rating",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 5,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Review"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 5
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 15
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 67
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
         "schemas": {
+            "CourseList": {
+                "title": "Course List Item",
+                "description": "Course information for list view",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Web Development Fundamentals"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "web-development-fundamentals"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Learn the basics of web development"
+                    },
+                    "thumbnail": {
+                        "type": "string",
+                        "example": "http://example.com/storage/thumbnails/course1.jpg",
+                        "nullable": true
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 99.99
+                    },
+                    "discounted_price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 79.99,
+                        "nullable": true
+                    },
+                    "duration": {
+                        "type": "string",
+                        "example": "8 weeks"
+                    },
+                    "level": {
+                        "type": "string",
+                        "enum": [
+                            "beginner",
+                            "intermediate",
+                            "advanced"
+                        ],
+                        "example": "beginner"
+                    },
+                    "language": {
+                        "type": "string",
+                        "example": "English"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "published"
+                    },
+                    "total_lessons": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "total_students": {
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "average_rating": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4.5
+                    },
+                    "total_reviews": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "category": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Web Development"
+                            },
+                            "slug": {
+                                "type": "string",
+                                "example": "web-development"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "instructor": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "John Instructor"
+                            },
+                            "avatar": {
+                                "type": "string",
+                                "example": "http://example.com/storage/avatars/instructor1.jpg",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "CourseDetail": {
+                "title": "Course Detail",
+                "description": "Detailed course information",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Web Development Fundamentals"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "web-development-fundamentals"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Complete course description"
+                    },
+                    "short_description": {
+                        "type": "string",
+                        "example": "Short course description"
+                    },
+                    "thumbnail": {
+                        "type": "string",
+                        "example": "http://example.com/storage/thumbnails/course1.jpg",
+                        "nullable": true
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 99.99
+                    },
+                    "discounted_price": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 79.99,
+                        "nullable": true
+                    },
+                    "duration": {
+                        "type": "string",
+                        "example": "8 weeks"
+                    },
+                    "level": {
+                        "type": "string",
+                        "enum": [
+                            "beginner",
+                            "intermediate",
+                            "advanced"
+                        ],
+                        "example": "beginner"
+                    },
+                    "language": {
+                        "type": "string",
+                        "example": "English"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "published"
+                    },
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "what_you_will_learn": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "total_lessons": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "total_students": {
+                        "type": "integer",
+                        "example": 150
+                    },
+                    "average_rating": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 4.5
+                    },
+                    "total_reviews": {
+                        "type": "integer",
+                        "example": 45
+                    },
+                    "rating_distribution": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "rating": {
+                                    "type": "integer",
+                                    "example": 5
+                                },
+                                "count": {
+                                    "type": "integer",
+                                    "example": 25
+                                },
+                                "percentage": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "example": 55.6
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Category": {
+                "title": "Course Category",
+                "description": "Course category information",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Web Development"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "web-development"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Category description"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "example": "fa-code",
+                        "nullable": true
+                    },
+                    "courses_count": {
+                        "type": "integer",
+                        "example": 15
+                    }
+                },
+                "type": "object"
+            },
+            "Review": {
+                "title": "Course Review",
+                "description": "Course review information",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "rating": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 1,
+                        "example": 5
+                    },
+                    "comment": {
+                        "type": "string",
+                        "example": "Great course!"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "user": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "John Student"
+                            },
+                            "avatar": {
+                                "type": "string",
+                                "example": "http://example.com/storage/avatars/student1.jpg",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "course": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "title": {
+                                "type": "string",
+                                "example": "Web Development Fundamentals"
+                            },
+                            "slug": {
+                                "type": "string",
+                                "example": "web-development-fundamentals"
+                            },
+                            "thumbnail": {
+                                "type": "string",
+                                "example": "http://example.com/storage/thumbnails/course1.jpg",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "Instructor": {
+                "title": "Instructor",
+                "description": "Instructor information",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "John Instructor"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "instructor@example.com"
+                    },
+                    "avatar": {
+                        "type": "string",
+                        "example": "http://example.com/storage/avatars/instructor1.jpg",
+                        "nullable": true
+                    },
+                    "bio": {
+                        "type": "string",
+                        "example": "Instructor biography"
+                    },
+                    "role": {
+                        "type": "string",
+                        "example": "instructor"
+                    },
+                    "total_courses": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "total_students": {
+                        "type": "integer",
+                        "example": 250
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "User": {
                 "title": "User",
                 "description": "User model",
@@ -475,6 +1139,22 @@
         {
             "name": "Authentication",
             "description": "Authentication"
+        },
+        {
+            "name": "Courses",
+            "description": "Courses"
+        },
+        {
+            "name": "Categories",
+            "description": "Categories"
+        },
+        {
+            "name": "Instructors",
+            "description": "Instructors"
+        },
+        {
+            "name": "Reviews",
+            "description": "Reviews"
         }
     ]
 }
