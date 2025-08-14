@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserCourseManagementController;
+use App\Http\Controllers\Api\DIscussionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
     Route::post('/submit-assignment', [UserCourseManagementController::class, 'submitAssignment']);
     Route::get('/my-assignments', [UserCourseManagementController::class, 'myAssignments']);
+});
+
+Route::prefix('courses/{course_id}')->group(function () {
+    Route::get('discussions', [DIscussionController::class, 'index']);
+    Route::post('discussions', [DIscussionController::class, 'store'])->middleware('auth:sanctum');
+});
+
+Route::prefix('discussions')->middleware('auth:sanctum')->group(function () {
+    Route::get('{id}', [DIscussionController::class, 'show'])->withoutMiddleware('auth:sanctum');
+    Route::put('{id}', [DIscussionController::class, 'update']);
+    Route::delete('{id}', [DIscussionController::class, 'destroy']);
+    Route::post('{id}/reply', [DIscussionController::class, 'reply']);
+    Route::post('{id}/upvote', [DIscussionController::class, 'upvote']);
+    Route::post('{id}/mark-answered', [DIscussionController::class, 'markAnswered']);
 });

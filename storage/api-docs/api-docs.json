@@ -678,6 +678,425 @@
                 }
             }
         },
+        "/api/courses/{course_id}/discussions": {
+            "get": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "List discussion threads for a course",
+                "description": "Returns paginated top-level discussion threads for the given course.",
+                "operationId": "2b1d2a804237c6ae872d8e3519f45536",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Filter by title/content",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "is_question",
+                        "in": "query",
+                        "description": "Filter by question type",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/DiscussionThreadSummary"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "last_page": {
+                                            "type": "integer"
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Course not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Create a new discussion thread",
+                "description": "Only enrolled (active) users can create threads.",
+                "operationId": "823b81671681c7c45dbaea4f2b1a7fb1",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "content"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "Question about this course"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "I don't understand this concept."
+                                    },
+                                    "is_question": {
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DiscussionPost"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not enrolled"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "404": {
+                        "description": "Course not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/discussions/{id}": {
+            "get": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Get a discussion thread with replies",
+                "description": "Returns the thread and its replies with user enrollment info.",
+                "operationId": "e6c7af64e0e8f75730b5c522d7f44c89",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DiscussionThread"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Update a discussion post",
+                "description": "Only the owner or course instructor can update.",
+                "operationId": "910cc57d0f64f43034e8f513409d2095",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "content": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Delete a discussion post",
+                "description": "Only the owner or course instructor can delete.",
+                "operationId": "55ba69428fc9a690c8df8deb2c2f1237",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/discussions/{id}/reply": {
+            "post": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Reply to a discussion thread",
+                "description": "Only enrolled (active) users can reply.",
+                "operationId": "1279385c42504f7e47ed7bb6f187cc5e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "content"
+                                ],
+                                "properties": {
+                                    "content": {
+                                        "type": "string",
+                                        "example": "Here is my answer..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DiscussionPost"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not enrolled"
+                    },
+                    "404": {
+                        "description": "Thread not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/discussions/{id}/upvote": {
+            "post": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Toggle upvote for a discussion",
+                "description": "Upvote or remove upvote from a discussion post.",
+                "operationId": "0059e5f31ad97a161c1d2d4a292b9740",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upvoted"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/discussions/{id}/mark-answered": {
+            "post": {
+                "tags": [
+                    "Discussions"
+                ],
+                "summary": "Mark a question as answered",
+                "description": "Mark a discussion question as answered (only question owner or instructor can do this).",
+                "operationId": "1e1dc00cbb2f54631ddb618aecd86722",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Marked as answered"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/my-courses": {
             "get": {
                 "tags": [
@@ -858,6 +1277,158 @@
     },
     "components": {
         "schemas": {
+            "DiscussionUser": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Jane Doe"
+                    },
+                    "avatar": {
+                        "type": "string",
+                        "example": "https://example.com/storage/avatars/jane.jpg",
+                        "nullable": true
+                    },
+                    "enrolled_courses": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "current_batch": {
+                        "type": "object",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DiscussionThreadSummary": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "discussable_type": {
+                        "type": "string",
+                        "example": "App\\Models\\Course"
+                    },
+                    "discussable_id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Doubt about this course"
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Can someone explain the difference between X and Y?"
+                    },
+                    "is_question": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "is_answered": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "upvotes": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/DiscussionUser"
+                    },
+                    "replies_count": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "DiscussionPost": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "discussable_type": {
+                        "type": "string",
+                        "example": "App\\Models\\Course"
+                    },
+                    "discussable_id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "parent_id": {
+                        "type": "integer",
+                        "example": null,
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "Issue in Module 2",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "Here is my question text..."
+                    },
+                    "is_question": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "is_answered": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "upvotes": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/DiscussionUser"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "DiscussionThread": {
+                "properties": {
+                    "thread": {
+                        "$ref": "#/components/schemas/DiscussionPost"
+                    },
+                    "replies": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DiscussionPost"
+                        }
+                    },
+                    "replies_count": {
+                        "type": "integer",
+                        "example": 5
+                    }
+                },
+                "type": "object"
+            },
             "EnrolledCourse": {
                 "properties": {
                     "enrollment_id": {
@@ -1377,6 +1948,10 @@
         {
             "name": "Reviews",
             "description": "Reviews"
+        },
+        {
+            "name": "Discussions",
+            "description": "Discussions"
         },
         {
             "name": "User Courses",
