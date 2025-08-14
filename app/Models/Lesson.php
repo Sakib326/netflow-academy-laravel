@@ -10,7 +10,7 @@ class Lesson extends Model
     use HasFactory;
 
     protected $fillable = [
-        'module_id', 'title', 'content', 'type', 'content_url', 'slug',
+        'module_id', 'title', 'content', 'type', 'content_url', 'slug','batch_id',
         'order_index', 'status', 'is_free', 'available_from', 
         'available_until', 'max_score'
     ];

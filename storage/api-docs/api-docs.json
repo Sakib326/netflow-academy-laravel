@@ -677,10 +677,228 @@
                     }
                 }
             }
+        },
+        "/api/my-courses": {
+            "get": {
+                "tags": [
+                    "User Courses"
+                ],
+                "summary": "Get enrolled courses for logged-in user",
+                "description": "Returns all courses the user is enrolled in, with batch, course, modules, lessons, instructor details and progress tracking",
+                "operationId": "6cebd3942eb908254064b2f43c424f1d",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by enrollment status",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "active",
+                                "completed",
+                                "expired",
+                                "suspended"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/EnrolledCourse"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 25
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/submit-assignment": {
+            "post": {
+                "tags": [
+                    "User Courses"
+                ],
+                "summary": "Submit or update assignment",
+                "description": "Submit an assignment for a course. Validates enrollment, batch timing, and assignment deadlines.",
+                "operationId": "0a759c8e3ce8146f54fc3e526df77586",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "assignment_id"
+                                ],
+                                "properties": {
+                                    "assignment_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "My assignment solution"
+                                    },
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "example": "Additional notes"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Submission successful"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Access denied - not enrolled or deadline passed"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/my-assignments": {
+            "get": {
+                "tags": [
+                    "User Courses"
+                ],
+                "summary": "Get user's assignments",
+                "description": "Get all assignments for enrolled courses with submission status",
+                "operationId": "146dbb7d3417a4ecb0ff2e1eb9866087",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter by submission status",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "pending",
+                                "submitted",
+                                "graded",
+                                "overdue"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "course_id",
+                        "in": "query",
+                        "description": "Filter by course ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
         "schemas": {
+            "EnrolledCourse": {
+                "properties": {
+                    "enrollment_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "enrollment_date": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "enrollment_status": {
+                        "type": "string",
+                        "example": "active"
+                    },
+                    "progress_percentage": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 75.5
+                    },
+                    "completed_lessons": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "total_lessons": {
+                        "type": "integer",
+                        "example": 20
+                    },
+                    "batch": {
+                        "type": "object"
+                    },
+                    "course": {
+                        "type": "object"
+                    },
+                    "next_class_time": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "CourseList": {
                 "title": "Course List Item",
                 "description": "Course information for list view",
@@ -969,7 +1187,11 @@
                         "minimum": 1,
                         "example": 5
                     },
-                    "comment": {
+                    "title": {
+                        "type": "string",
+                        "example": "Great course!"
+                    },
+                    "review": {
                         "type": "string",
                         "example": "Great course!"
                     },
@@ -1155,6 +1377,10 @@
         {
             "name": "Reviews",
             "description": "Reviews"
+        },
+        {
+            "name": "User Courses",
+            "description": "User Courses"
         }
     ]
 }

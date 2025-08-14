@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\UserCourseManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,4 +25,10 @@ Route::prefix('auth')->group(function () {
         Route::post('/update-password', [AuthController::class, 'updatePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
+    Route::post('/submit-assignment', [UserCourseManagementController::class, 'submitAssignment']);
+    Route::get('/my-assignments', [UserCourseManagementController::class, 'myAssignments']);
 });
