@@ -7,6 +7,25 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: "User",
+    title: "User",
+    description: "User model",
+    properties: [
+        new OA\Property(property: "id", type: "integer", example: 1),
+        new OA\Property(property: "name", type: "string", example: "John Doe"),
+        new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
+        new OA\Property(property: "role", type: "string", enum: ["admin", "instructor", "student", "moderator"], example: "student"),
+        new OA\Property(property: "phone", type: "string", nullable: true, example: "+8801234567890"),
+        new OA\Property(property: "avatar", type: "string", nullable: true, example: "avatars/user1.jpg"),
+        new OA\Property(property: "is_active", type: "boolean", example: true),
+        new OA\Property(property: "email_verified_at", type: "string", format: "date-time", nullable: true),
+        new OA\Property(property: "created_at", type: "string", format: "date-time"),
+        new OA\Property(property: "updated_at", type: "string", format: "date-time")
+    ]
+)]
 
 class User extends Authenticatable
 {
