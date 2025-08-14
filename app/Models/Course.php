@@ -117,4 +117,10 @@ class Course extends Model
         $completed = $this->enrollments()->where('status', 'completed')->count();
         return round(($completed / $total) * 100, 2);
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(CourseReview::class);
+    }
+
 }
