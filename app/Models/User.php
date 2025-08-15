@@ -156,4 +156,9 @@ class User extends Authenticatable implements FilamentUser
         {
             return $this->hasVerifiedEmail() && $this->role === 'admin';
         }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return !is_null($this->email_verified_at);
+    }
 }
