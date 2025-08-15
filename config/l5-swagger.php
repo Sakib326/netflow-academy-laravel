@@ -233,6 +233,20 @@ return [
             ],
         ],
 
+         /*
+             * API Server configuration
+             */
+            'servers' => [
+                [
+                    'url' => env('L5_SWAGGER_SERVER_URL', 'https://admin.netflowacademy.com'),
+                    'description' => env('L5_SWAGGER_SERVER_DESCRIPTION', 'Production Server'),
+                ],
+                [
+                    'url' => 'http://127.0.0.1:8000',
+                    'description' => 'Local Development Server',
+                ],
+            ],
+
         /*
          * Set this to `true` in development mode so that docs would be regenerated on each request
          * Set this to `false` to disable swagger generation on production

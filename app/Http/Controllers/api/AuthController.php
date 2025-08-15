@@ -21,6 +21,10 @@ use OpenApi\Attributes as OA;
     url: "http://127.0.0.1:8000",
     description: "Local development server"
 )]
+#[OA\Server(
+    url: "https://admin.netflowacademy.com",
+    description: "Production server"
+)]
 #[OA\SecurityScheme(
     securityScheme: "sanctum",
     type: "http",
