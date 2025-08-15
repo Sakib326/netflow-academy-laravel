@@ -9,6 +9,9 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use OpenApi\Attributes as OA;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+
 #[OA\Schema(
     schema: "Instructor",
     title: "Instructor",
@@ -44,7 +47,7 @@ use OpenApi\Attributes as OA;
     ]
 )]
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -148,4 +151,9 @@ class User extends Authenticatable
             
         return $enrollment ? $enrollment->progress_percentage : 0;
     }
+
+     public function canAccessPanel(Panel $panel): bool
+        {
+            return $this->hasVerifiedEmail() && $this->role === 'admin';
+        }
 }
