@@ -200,4 +200,10 @@ class Course extends Model
         return $this->hasMany(CourseReview::class);
     }
 
+       // Exams where the user is the instructor
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class, 'course_id');
+    }
+
 }

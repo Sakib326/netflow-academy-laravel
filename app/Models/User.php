@@ -161,4 +161,12 @@ class User extends Authenticatable implements FilamentUser
     {
         return !is_null($this->email_verified_at);
     }
+
+ 
+
+    // Exam responses submitted by the user (as student)
+    public function examResponses(): HasMany
+    {
+        return $this->hasMany(ExamResponse::class, 'user_id');
+    }
 }

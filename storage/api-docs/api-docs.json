@@ -1102,6 +1102,277 @@
                 ]
             }
         },
+        "/api/courses/{course_id}/batches/{batch_id}/exams": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get exams for a specific course and batch",
+                "description": "Get all active exams for a specific course and batch (only enrolled students can access)",
+                "operationId": "194f14b1fc04dd1a8ed50ebe82b6b1d7",
+                "parameters": [
+                    {
+                        "name": "course_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "batch_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "course_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "batch_id": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "batch_name": {
+                                            "type": "string",
+                                            "example": "Batch A"
+                                        },
+                                        "exams": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ExamSummary"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not enrolled in this batch"
+                    },
+                    "404": {
+                        "description": "Course or batch not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/exams/{exam_id}/start": {
+            "post": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Start an exam",
+                "description": "Start an exam session (only enrolled students can start)",
+                "operationId": "aed1cb5a6d4cba5282dbefcfad1bba01",
+                "parameters": [
+                    {
+                        "name": "exam_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exam started",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamDetail"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not enrolled or already attempted"
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/exams/{exam_id}/finish": {
+            "post": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Finish an exam",
+                "description": "Submit exam answers and automatically calculate score",
+                "operationId": "c4c5b1f6b042e64a32bb32f0df9a0bdc",
+                "parameters": [
+                    {
+                        "name": "exam_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "answers"
+                                ],
+                                "properties": {
+                                    "answers": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "question_id": {
+                                                    "type": "integer",
+                                                    "example": 0
+                                                },
+                                                "selected": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Exam submitted and graded",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not enrolled or exam not in progress"
+                    },
+                    "404": {
+                        "description": "Exam not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/exams/{exam_id}/result": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get exam result summary",
+                "description": "Get user's exam result summary if already submitted",
+                "operationId": "3f6ce5d3eb16746cc047fd617013263f",
+                "parameters": [
+                    {
+                        "name": "exam_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exam result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Exam or result not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/exams/{exam_id}/result/details": {
+            "get": {
+                "tags": [
+                    "Exams"
+                ],
+                "summary": "Get detailed exam result with answers",
+                "description": "Get detailed exam result showing correct answers, user answers, and question-wise analysis",
+                "operationId": "8cf05693c59152c258492f04763755a0",
+                "parameters": [
+                    {
+                        "name": "exam_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detailed exam result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExamResultDetail"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Exam or result not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/my-courses": {
             "get": {
                 "tags": [
@@ -1430,6 +1701,263 @@
                     "replies_count": {
                         "type": "integer",
                         "example": 5
+                    }
+                },
+                "type": "object"
+            },
+            "ExamQuestion": {
+                "properties": {
+                    "question": {
+                        "type": "string",
+                        "example": "What does PHP stand for?"
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "Personal Home Page",
+                            "Private Hypertext Processor",
+                            "PHP: Hypertext Preprocessor",
+                            "Public Hosting Project"
+                        ]
+                    },
+                    "answer": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                },
+                "type": "object"
+            },
+            "ExamDetail": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "batch_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "course_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "PHP Basics MCQ Exam"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "An exam to test fundamental PHP knowledge."
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExamQuestion"
+                        }
+                    },
+                    "total_time": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ExamSummary": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "PHP Basics MCQ Exam"
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "An exam to test fundamental PHP knowledge."
+                    },
+                    "total_time": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "active"
+                    },
+                    "total_questions": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "has_attempted": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "is_attended": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ExamResponse": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "exam_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "batch_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "total_time_taken": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 3
+                    },
+                    "max_score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 3
+                    },
+                    "percentage": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "graded"
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "submitted_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "graded_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "ExamResultDetail": {
+                "properties": {
+                    "exam_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "exam_title": {
+                        "type": "string",
+                        "example": "PHP Basics MCQ Exam"
+                    },
+                    "score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 3
+                    },
+                    "max_score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 3
+                    },
+                    "percentage": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 100
+                    },
+                    "total_time_taken": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "total_time_allowed": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "graded"
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "submitted_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "questions": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "question_id": {
+                                    "type": "integer",
+                                    "example": 0
+                                },
+                                "question": {
+                                    "type": "string",
+                                    "example": "What does PHP stand for?"
+                                },
+                                "options": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                "correct_answer": {
+                                    "type": "integer",
+                                    "example": 2
+                                },
+                                "user_answer": {
+                                    "type": "integer",
+                                    "example": 2
+                                },
+                                "is_correct": {
+                                    "type": "boolean",
+                                    "example": true
+                                }
+                            },
+                            "type": "object"
+                        }
                     }
                 },
                 "type": "object"
@@ -1957,6 +2485,10 @@
         {
             "name": "Discussions",
             "description": "Discussions"
+        },
+        {
+            "name": "Exams",
+            "description": "Exams"
         },
         {
             "name": "User Courses",

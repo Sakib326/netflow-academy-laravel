@@ -73,4 +73,15 @@ class Batch extends Model
     {
         return $this->end_date && $this->end_date <= now();
     }
+
+    
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class, 'batch_id');
+    }
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(ExamResponse::class, 'batch_id');
+    }
 }

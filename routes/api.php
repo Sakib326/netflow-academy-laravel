@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserCourseManagementController;
+use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DIscussionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -48,4 +49,12 @@ Route::prefix('discussions')->middleware('auth:sanctum')->group(function () {
     Route::post('{id}/reply', [DIscussionController::class, 'reply']);
     Route::post('{id}/upvote', [DIscussionController::class, 'upvote']);
     Route::post('{id}/mark-answered', [DIscussionController::class, 'markAnswered']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/courses/{course_id}/batches/{batch_id}/exams', [ExamController::class, 'getCourseExams']);
+    Route::post('/exams/{exam_id}/start', [ExamController::class, 'startExam']);
+    Route::post('/exams/{exam_id}/finish', [ExamController::class, 'finishExam']);
+    Route::get('/exams/{exam_id}/result', [ExamController::class, 'getExamResult']);
+    Route::get('/exams/{exam_id}/result/details', [ExamController::class, 'getExamResultDetails']);
 });
