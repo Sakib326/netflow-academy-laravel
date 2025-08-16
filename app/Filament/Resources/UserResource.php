@@ -58,6 +58,19 @@ class UserResource extends Resource
                             ->seconds(false)
                             ->placeholder('Not verified yet')
                             ->prefixIcon('heroicon-o-check-badge'),
+                            Forms\Components\TextInput::make('designation')
+                                ->label('Designation')
+                                ->placeholder('e.g. Software Engineer, Student')
+                                ->maxLength(100)
+                                ->prefixIcon('heroicon-o-briefcase'),
+
+                            Forms\Components\Textarea::make('bio')
+                                ->label('Bio')
+                                ->placeholder('Write a short bio...')
+                                ->rows(3)
+                                ->maxLength(500)
+                                ->autosize()
+                                ->prefixIcon('heroicon-o-document-text'),
                     ])
                     ->columns(2),
 

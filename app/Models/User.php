@@ -52,7 +52,7 @@ class User extends Authenticatable implements FilamentUser
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role', 'avatar', 'is_active'
+        'name', 'email', 'phone', 'password', 'role', 'avatar', 'is_active','bio','email_verified_at', 'designation'
     ];
 
     protected $hidden = ['password', 'remember_token'];

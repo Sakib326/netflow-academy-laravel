@@ -177,6 +177,7 @@ class UserCourseManagementController extends Controller
                         'email' => $course->instructor->email,
                         'avatar' => $course->instructor->avatar ? asset('storage/' . $course->instructor->avatar) : null,
                         'bio' => $course->instructor->bio ?? '',
+                        'designation' => $course->instructor->designation ?? '',
                     ] : null,
                     'modules' => $course->modules->map(function($module) use ($user) {
                         return [
