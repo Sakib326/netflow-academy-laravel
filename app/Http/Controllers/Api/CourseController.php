@@ -342,7 +342,7 @@ class CourseController extends Controller
     )]
     public function instructors()
     {
-        $instructors = User::whereIn('role', ['instructor', 'admin'])
+        $instructors = User::where('role', 'instructor')
             ->where('is_active', true)
             ->withCount(['courses' => function($query) {
                 $query->where('is_active', true);
