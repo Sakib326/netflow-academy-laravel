@@ -179,7 +179,17 @@ class AuthController extends Controller
     )]
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        
+        // Add full URL for avatar
+        $userArray = $user->toArray();
+        if ($user->avatar) {
+            $userArray['avatar_url'] = asset('storage/' . $user->avatar);
+        } else {
+            $userArray['avatar_url'] = null;
+        }
+
+        return response()->json($userArray);
     }
 
     #[OA\Post(
