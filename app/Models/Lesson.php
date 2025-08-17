@@ -10,16 +10,19 @@ class Lesson extends Model
     use HasFactory;
 
     protected $fillable = [
-        'module_id', 'title', 'content', 'type', 'content_url', 'slug','batch_id',
+        'module_id', 'title', 'content', 'type', 'files', 'slug', 'batch_id', 'questions',
         'order_index', 'status', 'is_free', 'available_from', 
         'available_until', 'max_score'
     ];
 
     protected $casts = [
-        'content' => 'array',
+        'content' => 'array',        // Added - used in getQuestions()
+        'questions' => 'array',
+        'files' => 'array',
         'is_free' => 'boolean',
         'available_from' => 'datetime',
-        'available_until' => 'datetime'
+        'available_until' => 'datetime',
+        'max_score' => 'integer'     // Added - should be integer for calculations
     ];
 
     // Relations
@@ -77,15 +80,32 @@ class Lesson extends Model
 
     public function getQuestions()
     {
-        return $this->isQuiz() && $this->content ? $this->content['questions'] ?? [] : [];
+        // Fixed: Check both content and questions fields
+        if ($this->isQuiz()) {
+            // If questions are stored in the questions field
+            if (!empty($this->questions)) {
+                return $this->questions;
+            }
+            // If questions are stored in content field
+            if (!empty($this->content) && isset($this->content['questions'])) {
+                return $this->content['questions'];
+            }
+        }
+        
+        return [];
     }
 
     public function getTotalMarks()
     {
-        if (!$this->isQuiz()) return $this->max_score ?? 0;
+        if (!$this->isQuiz()) {
+            return $this->max_score ?? 0;
+        }
         
         $questions = $this->getQuestions();
-        return collect($questions)->sum('marks');
+        $totalFromQuestions = collect($questions)->sum('marks');
+        
+        // Return the sum from questions, or fallback to max_score
+        return $totalFromQuestions > 0 ? $totalFromQuestions : ($this->max_score ?? 0);
     }
 
     public function getAverageScore()
@@ -97,6 +117,11 @@ class Lesson extends Model
 
     public function getCompletionRate()
     {
+        // Added null check for module and course
+        if (!$this->module || !$this->module->course) {
+            return 0;
+        }
+        
         $total = $this->module->course->getTotalStudents();
         if ($total == 0) return 0;
         

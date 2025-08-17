@@ -15,207 +15,191 @@ use Illuminate\Support\Str;
 class LessonsRelationManager extends RelationManager
 {
     protected static string $relationship = 'lessons';
-    protected static ?string $title = 'Course Lessons';
+    protected static ?string $title = 'Lessons';
     protected static ?string $icon = 'heroicon-o-academic-cap';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                // Basic Information
-                Forms\Components\Section::make('Lesson Information')
+                // Basic Info Section
+                Forms\Components\Section::make('Basic Info')
                     ->schema([
-                        Forms\Components\TextInput::make('title')
-                            ->required()
-                            ->maxLength(255)
-                            ->live(onBlur: true)
-                            ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                if (!$get('slug') && $state) {
-                                    $set('slug', Str::slug($state));
-                                }
-                            })
-                            ->columnSpan(2),
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\TextInput::make('title')
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
+                                        if (!$get('slug') && $state) {
+                                            $set('slug', Str::slug($state));
+                                        }
+                                    })
+                                    ->columnSpan(2),
 
-                        Forms\Components\TextInput::make('slug')
-                            ->required()
-                            ->unique(ignoreRecord: true)
-                            ->maxLength(255)
-                            ->alphaDash()
-                            ->columnSpan(1),
+                                Forms\Components\TextInput::make('order_index')
+                                    ->label('Order')
+                                    ->numeric()
+                                    ->default(fn () => $this->ownerRecord->lessons()->max('order_index') + 1)
+                                    ->required(),
 
-                        Forms\Components\Select::make('module_id')
-                            ->label('Module')
-                            ->relationship('module', 'title', fn (Builder $query) => 
-                                $query->where('course_id', $this->ownerRecord->id)
-                            )
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->columnSpan(1),
+                                Forms\Components\TextInput::make('slug')
+                                    ->unique(ignoreRecord: true)
+                                    ->required()
+                                    ->alphaDash()
+                                    ->columnSpan(2),
 
-                        Forms\Components\Select::make('type')
-                            ->options([
-                                'video' => 'Video',
-                                'text' => 'Text',
-                                'quiz' => 'Quiz',
-                                'assignment' => 'Assignment',
-                            ])
-                            ->required()
-                            ->default('video')
-                            ->live()
-                            ->columnSpan(1),
+                                Forms\Components\Select::make('type')
+                                    ->options([
+                                        'video' => 'Video',
+                                        'text' => 'Text',
+                                        'quiz' => 'Quiz',
+                                        'assignment' => 'Assignment',
+                                    ])
+                                    ->default('video')
+                                    ->required()
+                                    ->live(),
 
-                        Forms\Components\TextInput::make('order_index')
-                            ->label('Order')
-                            ->numeric()
-                            ->default(function () {
-                                try {
-                                    return $this->ownerRecord->lessons()->max('order_index') + 1;
-                                } catch (\Exception $e) {
-                                    return 1;
-                                }
-                            })
-                            ->required()
-                            ->columnSpan(1),
+                                Forms\Components\Select::make('module_id')
+                                    ->label('Module')
+                                    ->relationship('module', 'title', fn (Builder $query) =>
+                                        $query->where('course_id', $this->ownerRecord->id)
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->columnSpan(2),
 
-                        Forms\Components\Textarea::make('description')
-                            ->label('Description')
-                            ->maxLength(500)
-                            ->rows(3)
-                            ->columnSpanFull(),
+                                Forms\Components\Select::make('status')
+                                    ->options([
+                                        'draft' => 'Draft',
+                                        'published' => 'Published',
+                                        'locked' => 'Locked',
+                                    ])
+                                    ->default('draft')
+                                    ->required(),
 
-                        Forms\Components\Toggle::make('is_free')
-                            ->label('Free Lesson')
-                            ->default(false)
-                            ->columnSpan(1),
-
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'published' => 'Published',
-                                'locked' => 'Locked',
-                            ])
-                            ->default('draft')
-                            ->required()
-                            ->columnSpan(1),
+                                Forms\Components\Toggle::make('is_free')
+                                    ->label('Free Lesson')
+                                    ->inline(false)
+                                    ->default(false),
+                            ]),
                     ])
-                    ->columns(3),
+                    ->compact(),
 
                 // Content Section
                 Forms\Components\Section::make('Content')
                     ->schema([
                         Forms\Components\RichEditor::make('content')
-                            ->label('Lesson Content')
-                            ->columnSpanFull()
-                            ->visible(fn (Get $get) => ($get('type') ?? '') !== 'quiz'),
-
-                        Forms\Components\TextInput::make('video_url')
-                            ->label('Video URL')
-                            ->url()
-                            ->placeholder('https://youtube.com/watch?v=...')
-                            ->visible(fn (Get $get) => ($get('type') ?? '') === 'video'),
-
-                        Forms\Components\FileUpload::make('video_file')
-                            ->label('Video File')
-                            ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg'])
-                            ->maxSize(102400) // 100MB
-                            ->directory('lessons/videos')
-                            ->visible(fn (Get $get) => ($get('type') ?? '') === 'video'),
-
-                        Forms\Components\TextInput::make('duration')
-                            ->label('Duration (minutes)')
-                            ->numeric()
-                            ->placeholder('15')
-                            ->visible(fn (Get $get) => ($get('type') ?? '') === 'video'),
-
-                        Forms\Components\FileUpload::make('attachments')
-                            ->label('Lesson Files')
-                            ->multiple()
-                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/*'])
-                            ->maxSize(51200) // 50MB
-                            ->directory('lessons/attachments')
-                            ->visible(fn (Get $get) => in_array($get('type') ?? '', ['text', 'assignment'])),
-                    ]),
+                            ->toolbarButtons(['bold', 'italic', 'link', 'bulletList', 'orderedList'])
+                            ->visible(fn (Get $get) => in_array($get('type'), ['text', 'video']))
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn (Get $get) => in_array($get('type'), ['text', 'video']))
+                    ->compact(),
 
                 // Quiz Section
                 Forms\Components\Section::make('Quiz Questions')
                     ->schema([
-                        Forms\Components\Repeater::make('quiz_questions')
-                            ->label('Questions')
+                        Forms\Components\Repeater::make('questions')
                             ->schema([
-                                Forms\Components\Textarea::make('question')
-                                    ->label('Question')
+                                Forms\Components\TextInput::make('question')
                                     ->required()
                                     ->columnSpanFull(),
-
-                                Forms\Components\TextInput::make('points')
-                                    ->label('Points')
-                                    ->numeric()
-                                    ->default(1)
-                                    ->required()
-                                    ->columnSpan(1),
-
-                                Forms\Components\Repeater::make('options')
-                                    ->label('Answer Options')
+                                Forms\Components\Grid::make(4)
                                     ->schema([
-                                        Forms\Components\TextInput::make('text')
-                                            ->label('Option')
-                                            ->required()
-                                            ->columnSpan(2),
-
-                                        Forms\Components\Toggle::make('is_correct')
-                                            ->label('Correct')
-                                            ->columnSpan(1),
-                                    ])
-                                    ->columns(3)
-                                    ->defaultItems(4)
-                                    ->minItems(2)
-                                    ->maxItems(6)
-                                    ->itemLabel(function (array $state): string {
-                                        static $index = 0;
-                                        $label = chr(65 + $index) . '. ' . ($state['text'] ?? 'Option');
-                                        $index++;
-                                        return $label;
-                                    })
-                                    ->columnSpanFull(),
+                                        Forms\Components\TextInput::make('option_a')
+                                            ->label('Option A')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('option_b')
+                                            ->label('Option B')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('option_c')
+                                            ->label('Option C'),
+                                        Forms\Components\TextInput::make('option_d')
+                                            ->label('Option D'),
+                                    ]),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('correct_answer')
+                                            ->options([
+                                                'a' => 'A',
+                                                'b' => 'B', 
+                                                'c' => 'C',
+                                                'd' => 'D',
+                                            ])
+                                            ->required(),
+                                        Forms\Components\TextInput::make('marks')
+                                            ->numeric()
+                                            ->default(1)
+                                            ->required(),
+                                    ]),
                             ])
-                            ->columns(2)
                             ->defaultItems(1)
-                            ->itemLabel(function (array $state): string {
-                                static $questionIndex = 0;
-                                $questionIndex++;
-                                return 'Question ' . $questionIndex . ': ' . Str::limit($state['question'] ?? 'New Question', 50);
-                            })
+                            ->addActionLabel('Add Question')
                             ->collapsible()
-                            ->cloneable()
-                            ->columnSpanFull(),
+                            ->itemLabel(fn (array $state): ?string => $state['question'] ?? 'New Question'),
                     ])
-                    ->visible(fn (Get $get) => ($get('type') ?? '') === 'quiz'),
+                    ->visible(fn (Get $get) => $get('type') === 'quiz')
+                    ->compact(),
 
-                // Assignment Section
+                // Assignment Section  
                 Forms\Components\Section::make('Assignment Details')
                     ->schema([
-                        Forms\Components\RichEditor::make('assignment_instructions')
+                        Forms\Components\RichEditor::make('content')
                             ->label('Instructions')
+                            ->toolbarButtons(['bold', 'italic', 'bulletList'])
                             ->columnSpanFull(),
-
-                        Forms\Components\FileUpload::make('assignment_files')
-                            ->label('Assignment Files')
-                            ->multiple()
-                            ->acceptedFileTypes(['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
-                            ->maxSize(51200) // 50MB
-                            ->directory('lessons/assignments'),
-
-                        Forms\Components\TextInput::make('max_score')
-                            ->label('Maximum Score')
-                            ->numeric()
-                            ->default(100),
-
-                        Forms\Components\DateTimePicker::make('due_date')
-                            ->label('Due Date'),
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\TextInput::make('max_score')
+                                    ->label('Max Score')
+                                    ->numeric()
+                                    ->default(100),
+                                Forms\Components\DateTimePicker::make('available_until')
+                                    ->label('Due Date'),
+                            ]),
                     ])
-                    ->columns(2)
-                    ->visible(fn (Get $get) => ($get('type') ?? '') === 'assignment'),
+                    ->visible(fn (Get $get) => $get('type') === 'assignment')
+                    ->compact(),
+
+                Forms\Components\Section::make('Files')
+    ->schema([
+        Forms\Components\Repeater::make('files')
+            ->schema([
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label('File Name')
+                            ->required(),
+                        Forms\Components\Select::make('type')  // ← NEW: Choose upload or URL
+                            ->label('Type')
+                            ->options([
+                                'upload' => 'Upload File',
+                                'url' => 'External URL',
+                            ])
+                            ->default('upload')
+                            ->live()
+                            ->required(),
+                    ]),
+                Forms\Components\FileUpload::make('file')  // ← NEW: File upload field
+                    ->label('Upload File')
+                    ->directory('lessons/files')
+                    ->preserveFilenames()
+                    ->getUploadedFileNameForStorageUsing(
+                        fn ($file) => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '_' . now()->format('Ymd_His') . '.' . $file->getClientOriginalExtension()
+                    )
+                    ->maxSize(10240) // 10MB
+                    ->visible(fn (Get $get) => $get('type') === 'upload'),
+                Forms\Components\TextInput::make('url')  // ← EXISTING: URL field
+                    ->label('File URL')
+                    ->url()
+                    ->visible(fn (Get $get) => $get('type') === 'url')
+                    ->required(fn (Get $get) => $get('type') === 'url'),
+            ])
+    ])
+                    ->visible(fn (Get $get) => in_array($get('type'), ['text', 'assignment','video']))
+                    ->compact(),
             ]);
     }
 
@@ -227,199 +211,99 @@ class LessonsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('order_index')
                     ->label('#')
                     ->sortable()
+                    ->size('sm')
                     ->width(50),
-
+                    
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
-
+                    ->limit(30)
+                    ->weight('medium'),
+                    
                 Tables\Columns\TextColumn::make('module.title')
-                    ->label('Module')
                     ->badge()
-                    ->color('gray'),
-
+                    ->color('gray')
+                    ->size('sm'),
+                    
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'video' => 'info',
-                        'text' => 'success',
+                        'video' => 'success',
+                        'text' => 'info',
                         'quiz' => 'warning',
                         'assignment' => 'danger',
                         default => 'gray',
-                    }),
-
+                    })
+                    ->size('sm'),
+                    
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
                         'published' => 'success',
+                        'draft' => 'gray',
                         'locked' => 'danger',
                         default => 'gray',
-                    }),
-
+                    })
+                    ->size('sm'),
+                    
                 Tables\Columns\IconColumn::make('is_free')
-                    ->label('Free')
                     ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->trueColor('success')
-                    ->falseIcon('heroicon-o-lock-closed')
-                    ->falseColor('warning'),
-
-                Tables\Columns\TextColumn::make('duration')
-                    ->label('Duration')
-                    ->suffix(' min')
-                    ->placeholder('N/A'),
-
-                Tables\Columns\IconColumn::make('has_attachments')
-                    ->label('Files')
-                    ->boolean()
-                    ->getStateUsing(fn ($record) => 
-                        !empty($record->video_file) || 
-                        !empty($record->attachments) || 
-                        !empty($record->assignment_files)
-                    )
-                    ->trueIcon('heroicon-o-paper-clip')
-                    ->trueColor('success')
-                    ->falseIcon('heroicon-o-minus')
-                    ->falseColor('gray'),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
-                    ->dateTime('M j, Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->size('sm'),
             ])
             ->defaultSort('order_index')
             ->reorderable('order_index')
             ->filters([
-                Tables\Filters\SelectFilter::make('module')
+                Tables\Filters\SelectFilter::make('module_id')
+                    ->label('Module')
                     ->relationship('module', 'title'),
-
+                    
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'video' => 'Video',
-                        'text' => 'Text',
+                        'text' => 'Text', 
                         'quiz' => 'Quiz',
-                        'assignment' => 'Assignment',
+                        'assignment' => 'Assignment'
                     ]),
-
+                    
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'draft' => 'Draft',
                         'published' => 'Published',
-                        'locked' => 'Locked',
+                        'locked' => 'Locked'
                     ]),
-
-                Tables\Filters\TernaryFilter::make('is_free')
-                    ->label('Free Lessons'),
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label('Add Lesson')
-                    ->mutateFormDataUsing(function (array $data): array {
-                        $data['course_id'] = $this->ownerRecord->id;
-
-                        if (!isset($data['order_index'])) {
-                            $data['order_index'] = $this->ownerRecord->lessons()->max('order_index') + 1;
-                        }
-
-                        // Handle quiz data
-                        if ($data['type'] === 'quiz' && isset($data['quiz_questions'])) {
-                            $data['content'] = json_encode($data['quiz_questions']);
-                            unset($data['quiz_questions']);
-                        }
-
-                        // Handle assignment instructions
-                        if ($data['type'] === 'assignment' && isset($data['assignment_instructions'])) {
-                            if (empty($data['content'])) {
-                                $data['content'] = $data['assignment_instructions'];
-                            }
-                            unset($data['assignment_instructions']);
-                        }
-
-                        return $data;
-                    }),
+                    ->icon('heroicon-o-plus')
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->mutateRecordDataUsing(function (array $data): array {
-                        // Convert quiz content back to form format
-                        if ($data['type'] === 'quiz' && !empty($data['content'])) {
-                            try {
-                                $quizData = is_string($data['content']) ? 
-                                    json_decode($data['content'], true) : $data['content'];
-                                
-                                if (is_array($quizData)) {
-                                    $data['quiz_questions'] = $quizData;
-                                }
-                            } catch (\Exception $e) {
-                                $data['quiz_questions'] = [];
-                            }
-                        }
-
-                        // Handle assignment instructions
-                        if ($data['type'] === 'assignment') {
-                            $data['assignment_instructions'] = $data['content'] ?? '';
-                        }
-
-                        return $data;
-                    })
-                    ->mutateFormDataUsing(function (array $data): array {
-                        // Handle quiz data formatting on save
-                        if ($data['type'] === 'quiz' && isset($data['quiz_questions'])) {
-                            $data['content'] = json_encode($data['quiz_questions']);
-                            unset($data['quiz_questions']);
-                        }
-
-                        // Handle assignment instructions
-                        if ($data['type'] === 'assignment' && isset($data['assignment_instructions'])) {
-                            if (empty($data['content'])) {
-                                $data['content'] = $data['assignment_instructions'];
-                            }
-                            unset($data['assignment_instructions']);
-                        }
-
-                        return $data;
-                    }),
-
+                    ->size('sm'),
+                    
                 Tables\Actions\Action::make('duplicate')
-                    ->label('Duplicate')
                     ->icon('heroicon-o-document-duplicate')
+                    ->size('sm')
                     ->action(function ($record) {
                         $newLesson = $record->replicate();
-                        $newLesson->title = $record->title . ' (Copy)';
-                        $newLesson->slug = $record->slug . '-copy-' . time();
-                        $newLesson->order_index = $this->ownerRecord->lessons()->max('order_index') + 1;
-                        $newLesson->status = 'draft';
+                        $newLesson->fill([
+                            'title' => $record->title . ' (Copy)',
+                            'slug' => $record->slug . '-copy-' . time(),
+                            'order_index' => $this->ownerRecord->lessons()->max('order_index') + 1,
+                            'status' => 'draft'
+                        ]);
                         $newLesson->save();
-                    })
-                    ->requiresConfirmation(),
-
-                Tables\Actions\DeleteAction::make(),
+                    }),
+                    
+                Tables\Actions\DeleteAction::make()
+                    ->size('sm'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('publish')
-                        ->label('Publish Selected')
-                        ->icon('heroicon-o-check')
-                        ->color('success')
-                        ->action(fn ($records) => $records->each->update(['status' => 'published']))
-                        ->deselectRecordsAfterCompletion(),
-
-                    Tables\Actions\BulkAction::make('lock')
-                        ->label('Lock Selected')
-                        ->icon('heroicon-o-lock-closed')
-                        ->color('danger')
-                        ->action(fn ($records) => $records->each->update(['status' => 'locked']))
-                        ->deselectRecordsAfterCompletion(),
-
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Add First Lesson'),
-            ]);
+            ->emptyStateHeading('No lessons yet')
+            ->emptyStateDescription('Create your first lesson to get started.')
+            ->emptyStateIcon('heroicon-o-academic-cap');
     }
 }

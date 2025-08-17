@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,17 +10,21 @@ class Submission extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'lesson_id', 'type', 'content', 'file_path',
+        'user_id', 'lesson_id', 'type', 'content', 'files',
         'score', 'max_score', 'status', 'submitted_at', 
         'graded_at', 'graded_by', 'feedback'
     ];
 
     protected $casts = [
-        'content' => 'array',
+        'content' => 'array',        // Added - used in autoGradeQuiz() to access answers
+        'files' => 'array',
         'score' => 'decimal:2',
         'max_score' => 'decimal:2',
         'submitted_at' => 'datetime',
-        'graded_at' => 'datetime'
+        'graded_at' => 'datetime',
+        'user_id' => 'integer',      // Added - foreign key should be integer
+        'lesson_id' => 'integer',    // Added - foreign key should be integer  
+        'graded_by' => 'integer'     // Added - foreign key should be integer
     ];
 
     // Relations
@@ -82,14 +85,57 @@ class Submission extends Model
             'graded_at' => now()
         ]);
         
-        // Update enrollment progress
+        // Update enrollment progress with better error handling
+        $this->updateEnrollmentProgress();
+    }
+
+    /**
+     * Update enrollment progress for this submission
+     */
+    protected function updateEnrollmentProgress()
+    {
+        // Added safety checks for relationships
+        if (!$this->lesson || !$this->lesson->module || !$this->lesson->module->course) {
+            return;
+        }
+        
         $enrollment = Enrollment::where('user_id', $this->user_id)
             ->whereHas('batch', function($query) {
                 $query->where('course_id', $this->lesson->module->course_id);
             })->first();
             
-        if ($enrollment) {
+        if ($enrollment && method_exists($enrollment, 'updateProgress')) {
             $enrollment->updateProgress();
         }
+    }
+
+    /**
+     * Check if this submission passed (score >= passing threshold)
+     */
+    public function hasPassed($passingPercentage = 60)
+    {
+        $percentage = $this->getScorePercentage();
+        return $percentage >= $passingPercentage;
+    }
+
+    /**
+     * Get the grade letter based on score percentage
+     */
+    public function getGradeLetter()
+    {
+        $percentage = $this->getScorePercentage();
+        
+        if ($percentage >= 90) return 'A+';
+        if ($percentage >= 85) return 'A';
+        if ($percentage >= 80) return 'A-';
+        if ($percentage >= 75) return 'B+';
+        if ($percentage >= 70) return 'B';
+        if ($percentage >= 65) return 'B-';
+        if ($percentage >= 60) return 'C+';
+        if ($percentage >= 55) return 'C';
+        if ($percentage >= 50) return 'C-';
+        if ($percentage >= 40) return 'D';
+        
+        return 'F';
     }
 }

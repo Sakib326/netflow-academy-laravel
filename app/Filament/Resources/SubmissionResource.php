@@ -99,49 +99,162 @@ class SubmissionResource extends Resource
                     ->visible(fn (Forms\Get $get) => $get('type') === 'assignment'),
 
                 // Quiz Answers Section
-                Forms\Components\Section::make('Quiz Answers')
+Forms\Components\Section::make('Quiz Answers')
+    ->schema([
+        Forms\Components\Repeater::make('quiz_answers')
+            ->label('Quiz Responses')
+            ->schema([
+                Forms\Components\Textarea::make('question')
+                    ->label('Question')
+                    ->disabled()
+                    ->columnSpanFull()
+                    ->default(function ($state, $get) {
+                        // Extract question from the nested structure
+                        return $state['question'] ?? 'Question not available';
+                    }),
+
+                Forms\Components\Grid::make(2)
                     ->schema([
-                        Forms\Components\Repeater::make('quiz_answers')
-                            ->label('Quiz Responses')
-                            ->schema([
-                                Forms\Components\Textarea::make('question')
-                                    ->label('Question')
-                                    ->disabled()
-                                    ->columnSpanFull(),
+                        Forms\Components\TextInput::make('selected_answer')
+                            ->label('Student Answer')
+                            ->disabled()
+                            ->default(function ($state) {
+                                // Handle different possible structures
+                                if (isset($state['selected_answer'])) {
+                                    return $state['selected_answer'];
+                                }
+                                // If stored as option text
+                                if (isset($state['selected_option_text'])) {
+                                    return $state['selected_option_text'];
+                                }
+                                // If we need to look up from options
+                                if (isset($state['selected_option']) && isset($state['options'])) {
+                                    $selectedOption = collect($state['options'])->firstWhere('id', $state['selected_option']);
+                                    return $selectedOption['text'] ?? $state['selected_option'];
+                                }
+                                return 'No answer provided';
+                            }),
 
-                                Forms\Components\TextInput::make('selected_answer')
-                                    ->label('Student Answer')
-                                    ->disabled()
-                                    ->columnSpan(1),
+                        Forms\Components\TextInput::make('correct_answer')
+                            ->label('Correct Answer')
+                            ->disabled()
+                            ->default(function ($state) {
+                                // Handle different possible structures
+                                if (isset($state['correct_answer'])) {
+                                    return $state['correct_answer'];
+                                }
+                                // If we need to look up from options and correct_option
+                                if (isset($state['correct_option']) && isset($state['options'])) {
+                                    $correctOption = collect($state['options'])->firstWhere('id', $state['correct_option']);
+                                    return $correctOption['text'] ?? $state['correct_option'];
+                                }
+                                return 'Not available';
+                            }),
+                    ]),
 
-                                Forms\Components\TextInput::make('correct_answer')
-                                    ->label('Correct Answer')
-                                    ->disabled()
-                                    ->columnSpan(1),
+                Forms\Components\Grid::make(3)
+                    ->schema([
+                        Forms\Components\Toggle::make('is_correct')
+                            ->label('Is Correct')
+                            ->disabled()
+                            ->default(function ($state) {
+                                // Check if answer is correct
+                                if (isset($state['is_correct'])) {
+                                    return $state['is_correct'];
+                                }
+                                // Compare selected with correct option
+                                if (isset($state['selected_option']) && isset($state['correct_option'])) {
+                                    return $state['selected_option'] === $state['correct_option'];
+                                }
+                                return false;
+                            }),
 
-                                Forms\Components\Toggle::make('is_correct')
-                                    ->label('Is Correct')
-                                    ->disabled()
-                                    ->columnSpan(1),
+                        Forms\Components\TextInput::make('points_earned')
+                            ->label('Points Earned')
+                            ->numeric()
+                            ->disabled()
+                            ->default(function ($state) {
+                                $points = $state['points'] ?? $state['marks'] ?? 1;
+                                $isCorrect = $state['is_correct'] ?? false;
+                                
+                                // If not directly available, calculate
+                                if (!isset($state['is_correct'])) {
+                                    if (isset($state['selected_option']) && isset($state['correct_option'])) {
+                                        $isCorrect = $state['selected_option'] === $state['correct_option'];
+                                    }
+                                }
+                                
+                                return $isCorrect ? $points : 0;
+                            }),
 
-                                Forms\Components\TextInput::make('points_earned')
-                                    ->label('Points Earned')
-                                    ->numeric()
-                                    ->disabled()
-                                    ->columnSpan(1),
-                            ])
-                            ->columns(4)
-                            ->addable(false)
-                            ->deletable(false)
-                            ->reorderable(false)
-                            ->collapsed()
-                            ->itemLabel(function (array $state): string {
-                                $status = $state['is_correct'] ? '✅' : '❌';
-                                return $status . ' Question: ' . substr($state['question'] ?? 'Unknown', 0, 50) . '...';
-                            })
-                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('max_points')
+                            ->label('Max Points')
+                            ->numeric()
+                            ->disabled()
+                            ->default(function ($state) {
+                                return $state['points'] ?? $state['marks'] ?? 1;
+                            }),
+                    ]),
+
+                // Show all available options for reference
+                Forms\Components\Repeater::make('options')
+                    ->label('Answer Options')
+                    ->schema([
+                        Forms\Components\TextInput::make('text')
+                            ->label('Option')
+                            ->disabled(),
+                        Forms\Components\Checkbox::make('is_selected')
+                            ->label('Selected')
+                            ->disabled()
+                            ->default(function ($state, $get) {
+                                $parentState = $get('../../');
+                                $selectedOption = $parentState['selected_option'] ?? null;
+                                return $selectedOption === ($state['id'] ?? null);
+                            }),
+                        Forms\Components\Checkbox::make('is_correct_option')
+                            ->label('Correct')
+                            ->disabled()
+                            ->default(function ($state, $get) {
+                                $parentState = $get('../../');
+                                $correctOption = $parentState['correct_option'] ?? null;
+                                return $correctOption === ($state['id'] ?? null);
+                            }),
                     ])
-                    ->visible(fn (Forms\Get $get) => $get('type') === 'quiz'),
+                    ->columns(3)
+                    ->addable(false)
+                    ->deletable(false)
+                    ->reorderable(false)
+                    ->collapsed()
+                    ->columnSpanFull(),
+            ])
+            ->columns(1)
+            ->addable(false)
+            ->deletable(false)
+            ->reorderable(false)
+            ->collapsed()
+            ->itemLabel(function (array $state): string {
+                $isCorrect = false;
+                
+                // Determine if answer is correct
+                if (isset($state['is_correct'])) {
+                    $isCorrect = $state['is_correct'];
+                } elseif (isset($state['selected_option']) && isset($state['correct_option'])) {
+                    $isCorrect = $state['selected_option'] === $state['correct_option'];
+                }
+                
+                $status = $isCorrect ? '✅' : '❌';
+                $questionText = $state['question'] ?? 'Question not available';
+                $points = $state['points'] ?? $state['marks'] ?? 1;
+                $earnedPoints = $isCorrect ? $points : 0;
+                
+                // Use substr instead of Str::limit to avoid import issues
+                $shortQuestion = strlen($questionText) > 50 ? substr($questionText, 0, 50) . '...' : $questionText;
+                
+                return $status . ' Question: ' . $shortQuestion . " ({$earnedPoints}/{$points} pts)";
+            })
+            ->columnSpanFull(),
+    ])
+    ->visible(fn (Forms\Get $get) => $get('type') === 'quiz'),
 
                 // Grading Section
                 Forms\Components\Section::make('Grading')
