@@ -36,7 +36,7 @@ class SubmissionResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('user_id')
                                     ->label('Student')
-                                    ->relationship('user', 'name', fn($query) => $query->where('role', 'student'))
+                                    ->relationship('user', 'name', fn ($query) => $query->where('role', 'student'))
                                     ->searchable()
                                     ->required()
                                     ->preload()
@@ -44,7 +44,7 @@ class SubmissionResource extends Resource
 
                                 Forms\Components\Select::make('lesson_id')
                                     ->label('Lesson')
-                                    ->relationship('lesson', 'title', fn($query) => $query->whereIn('type', ['assignment', 'quiz']))
+                                    ->relationship('lesson', 'title', fn ($query) => $query->whereIn('type', ['assignment', 'quiz']))
                                     ->searchable()
                                     ->required()
                                     ->preload()
@@ -128,13 +128,11 @@ class SubmissionResource extends Resource
 
                                 Forms\Components\Select::make('status')
                                     ->options([
-                                        'submitted' => 'Submitted',
                                         'graded' => 'Graded',
                                         'pending' => 'Pending',
                                         'late' => 'Late',
-                                        'resubmit' => 'Resubmit',
                                     ])
-                                    ->default('submitted')
+                                    ->default('pending')
                                     ->required(),
                             ]),
 
@@ -146,7 +144,7 @@ class SubmissionResource extends Resource
 
                                 Forms\Components\Select::make('graded_by')
                                     ->label('Graded By')
-                                    ->relationship('grader', 'name', fn($query) => $query->whereIn('role', ['admin', 'instructor']))
+                                    ->relationship('grader', 'name', fn ($query) => $query->whereIn('role', ['admin', 'instructor']))
                                     ->searchable()
                                     ->default(auth()->id())
                                     ->visible(fn (Forms\Get $get) => $get('status') === 'graded'),
@@ -196,13 +194,17 @@ class SubmissionResource extends Resource
                 Tables\Columns\TextColumn::make('score_display')
                     ->label('Score')
                     ->getStateUsing(function ($record) {
-                        if ($record->score === null) return 'Not Graded';
+                        if ($record->score === null) {
+                            return 'Not Graded';
+                        }
                         return round($record->score, 1) . '/' . ($record->max_score ?? 100);
                     })
                     ->badge()
                     ->size('xs')
                     ->color(function ($record) {
-                        if ($record->score === null) return 'gray';
+                        if ($record->score === null) {
+                            return 'gray';
+                        }
                         $percentage = ($record->score / ($record->max_score ?? 100)) * 100;
                         return match (true) {
                             $percentage >= 90 => 'green',
@@ -219,7 +221,6 @@ class SubmissionResource extends Resource
                         'graded' => 'green',
                         'pending' => 'yellow',
                         'late' => 'red',
-                        'resubmit' => 'blue',
                         default => 'gray',
                     }),
 
@@ -240,7 +241,7 @@ class SubmissionResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('user_id')
                     ->label('Student')
-                    ->relationship('user', 'name', fn($query) => $query->where('role', 'student'))
+                    ->relationship('user', 'name', fn ($query) => $query->where('role', 'student'))
                     ->searchable()
                     ->multiple(),
 
@@ -258,11 +259,9 @@ class SubmissionResource extends Resource
 
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'submitted' => 'Submitted',
                         'graded' => 'Graded',
                         'pending' => 'Pending',
                         'late' => 'Late',
-                        'resubmit' => 'Resubmit',
                     ])
                     ->multiple(),
 
@@ -307,7 +306,7 @@ class SubmissionResource extends Resource
                                 Forms\Components\TextInput::make('max_score')
                                     ->label('Max Score')
                                     ->numeric()
-                                    ->default(fn($record) => $record->max_score ?? 100)
+                                    ->default(fn ($record) => $record->max_score ?? 100)
                                     ->required(),
                             ]),
 
@@ -341,7 +340,7 @@ class SubmissionResource extends Resource
                     ->action(function ($record) {
                         if ($record->type === 'quiz' && method_exists($record, 'autoGradeQuiz')) {
                             $record->autoGradeQuiz();
-                            
+
                             Notification::make()
                                 ->success()
                                 ->title('Quiz auto-graded')
