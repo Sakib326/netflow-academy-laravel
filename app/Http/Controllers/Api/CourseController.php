@@ -90,7 +90,7 @@ class CourseController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('description', 'like', "%{$search}%");
             });
@@ -180,13 +180,13 @@ class CourseController extends Controller
         $course = Course::with([
             'category',
             'instructor',
-            'modules' => function($query) {
+            'modules' => function ($query) {
                 $query->orderBy('order_index');
             },
-            'modules.lessons' => function($query) {
+            'modules.lessons' => function ($query) {
                 $query->orderBy('order_index');
             },
-            'reviews' => function($query) {
+            'reviews' => function ($query) {
                 $query->with('user')->latest()->take(10);
             }
         ])
@@ -206,6 +206,7 @@ class CourseController extends Controller
                     return [
                         'id' => $lesson->id,
                         'title' => $lesson->title,
+                        'slug' => $lesson->slug,
                         'description' => $lesson->description,
                         'duration' => $lesson->duration,
                         'lesson_type' => $lesson->lesson_type,
@@ -344,10 +345,10 @@ class CourseController extends Controller
     {
         $instructors = User::where('role', 'instructor')
             ->where('is_active', true)
-            ->withCount(['courses' => function($query) {
+            ->withCount(['courses' => function ($query) {
                 $query->where('is_active', true);
             }])
-            ->with(['courses' => function($query) {
+            ->with(['courses' => function ($query) {
                 $query->where('is_active', true)->withCount('enrollments');
             }])
             ->orderBy('name')
