@@ -8,14 +8,12 @@ use App\Http\Controllers\Api\DIscussionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-
-
 // Authentication routes with 'auth' prefix
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-    
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
@@ -57,4 +55,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/exams/{exam_id}/finish', [ExamController::class, 'finishExam']);
     Route::get('/exams/{exam_id}/result', [ExamController::class, 'getExamResult']);
     Route::get('/exams/{exam_id}/result/details', [ExamController::class, 'getExamResultDetails']);
+});
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/modules', [LessonModuleController::class, 'modules']); // ?course_id=...
+    Route::get('/lessons/{lesson}', [LessonModuleController::class, 'lesson']);
+    Route::post('/lessons/{lesson}/submit', [LessonModuleController::class, 'submit']);
+    Route::get('/lessons/{lesson}/submissions', [LessonModuleController::class, 'submissions']);
 });
