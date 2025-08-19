@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserCourseManagementController;
+use App\Http\Controllers\Api\LessonModuleController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DIscussionController;
 use Illuminate\Http\Request;
