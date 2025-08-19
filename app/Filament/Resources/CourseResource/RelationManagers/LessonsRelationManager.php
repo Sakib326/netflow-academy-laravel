@@ -40,7 +40,7 @@ class LessonsRelationManager extends RelationManager
                                 Forms\Components\TextInput::make('order_index')
                                     ->label('Order')
                                     ->numeric()
-                                    ->default(fn () => $this->ownerRecord->lessons()->max('order_index') + 1)
+                                    ->default(fn () => $this->ownerRecord->lessons()->max('lessons.order_index') + 1)
                                     ->required(),
 
                                 Forms\Components\TextInput::make('slug')
@@ -62,7 +62,10 @@ class LessonsRelationManager extends RelationManager
 
                                 Forms\Components\Select::make('module_id')
                                     ->label('Module')
-                                    ->relationship('module', 'title', fn (Builder $query) =>
+                                    ->relationship(
+                                        'module',
+                                        'title',
+                                        fn (Builder $query) =>
                                         $query->where('course_id', $this->ownerRecord->id)
                                     )
                                     ->searchable()
@@ -124,7 +127,7 @@ class LessonsRelationManager extends RelationManager
                                         Forms\Components\Select::make('correct_answer')
                                             ->options([
                                                 'a' => 'A',
-                                                'b' => 'B', 
+                                                'b' => 'B',
                                                 'c' => 'C',
                                                 'd' => 'D',
                                             ])
@@ -143,7 +146,7 @@ class LessonsRelationManager extends RelationManager
                     ->visible(fn (Get $get) => $get('type') === 'quiz')
                     ->compact(),
 
-                // Assignment Section  
+                // Assignment Section
                 Forms\Components\Section::make('Assignment Details')
                     ->schema([
                         Forms\Components\RichEditor::make('content')
@@ -213,17 +216,17 @@ class LessonsRelationManager extends RelationManager
                     ->sortable()
                     ->size('sm')
                     ->width(50),
-                    
+
                 Tables\Columns\TextColumn::make('title')
                     ->searchable()
                     ->limit(30)
                     ->weight('medium'),
-                    
+
                 Tables\Columns\TextColumn::make('module.title')
                     ->badge()
                     ->color('gray')
                     ->size('sm'),
-                    
+
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -234,7 +237,7 @@ class LessonsRelationManager extends RelationManager
                         default => 'gray',
                     })
                     ->size('sm'),
-                    
+
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -244,7 +247,7 @@ class LessonsRelationManager extends RelationManager
                         default => 'gray',
                     })
                     ->size('sm'),
-                    
+
                 Tables\Columns\IconColumn::make('is_free')
                     ->boolean()
                     ->size('sm'),
@@ -255,15 +258,15 @@ class LessonsRelationManager extends RelationManager
                 Tables\Filters\SelectFilter::make('module_id')
                     ->label('Module')
                     ->relationship('module', 'title'),
-                    
+
                 Tables\Filters\SelectFilter::make('type')
                     ->options([
                         'video' => 'Video',
-                        'text' => 'Text', 
+                        'text' => 'Text',
                         'quiz' => 'Quiz',
                         'assignment' => 'Assignment'
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
                         'draft' => 'Draft',
@@ -279,7 +282,7 @@ class LessonsRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->size('sm'),
-                    
+
                 Tables\Actions\Action::make('duplicate')
                     ->icon('heroicon-o-document-duplicate')
                     ->size('sm')
@@ -293,7 +296,7 @@ class LessonsRelationManager extends RelationManager
                         ]);
                         $newLesson->save();
                     }),
-                    
+
                 Tables\Actions\DeleteAction::make()
                     ->size('sm'),
             ])
