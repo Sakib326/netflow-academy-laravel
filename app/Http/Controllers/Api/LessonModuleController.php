@@ -46,8 +46,10 @@ class LessonModuleController extends Controller
             ->firstOrFail();
 
         $isEnrolled = Enrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
             ->where('status', 'active')
+            ->whereHas('batch', function ($q) use ($course) {
+                $q->where('course_id', $course->id);
+            })
             ->exists();
 
         $modules = $course->modules->map(function ($module) {
@@ -118,8 +120,10 @@ class LessonModuleController extends Controller
 
         $isEnrolled = $courseId
             ? Enrollment::where('user_id', $user->id)
-                ->where('course_id', $courseId)
                 ->where('status', 'active')
+                ->whereHas('batch', function ($q) use ($course) {
+                    $q->where('course_id', $course->id);
+                })
                 ->exists()
             : false;
 
@@ -201,8 +205,10 @@ class LessonModuleController extends Controller
         $courseId = $lesson->module->course_id ?? null;
         $isEnrolled = $courseId
             ? Enrollment::where('user_id', $user->id)
-                ->where('course_id', $courseId)
                 ->where('status', 'active')
+                ->whereHas('batch', function ($q) use ($course) {
+                    $q->where('course_id', $course->id);
+                })
                 ->exists()
             : false;
 
