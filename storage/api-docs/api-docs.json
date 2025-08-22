@@ -1478,6 +1478,136 @@
                 ]
             }
         },
+        "/api/lessons/{slug}/submit": {
+            "post": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Submit a lesson (assignment or quiz) by lesson slug",
+                "operationId": "8c68b8b3581c2ea26d13b718d451bbc5",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Lesson slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "content": {
+                                        "description": "Assignment text",
+                                        "type": "string"
+                                    },
+                                    "answers": {
+                                        "description": "Quiz answers as JSON array",
+                                        "type": "string"
+                                    },
+                                    "files[]": {
+                                        "description": "Files (image, pdf, doc, zip)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Submission created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "submission": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You must purchase this course to submit this lesson."
+                    },
+                    "404": {
+                        "description": "Lesson not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/lessons/{slug}/submissions": {
+            "get": {
+                "tags": [
+                    "Lessons"
+                ],
+                "summary": "Get submissions by lesson slug (for authenticated user)",
+                "operationId": "24a1be146f03004d14baff6caf4fa8c1",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Lesson slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Submissions list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "submissions": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Lesson not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/my-courses": {
             "get": {
                 "tags": [

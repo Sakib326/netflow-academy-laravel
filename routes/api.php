@@ -60,8 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/modules', [LessonModuleController::class, 'modules']); // ?course_id=...
-    Route::get('/lessons/{lesson}', [LessonModuleController::class, 'lesson']);
-    Route::post('/lessons/{lesson}/submit', [LessonModuleController::class, 'submit']);
-    Route::get('/lessons/{lesson}/submissions', [LessonModuleController::class, 'submissions']);
+    Route::get('/modules/{slug}', [LessonModuleController::class, 'modules']); // ?course_id=...
+    Route::get('/lessons/{slug}', [LessonModuleController::class, 'lesson']);
+    Route::post('/lessons/{slug}/submit', [LessonModuleController::class, 'submit']);
+    Route::get('/lessons/{slug}/submissions', [LessonModuleController::class, 'submissions']);
 });

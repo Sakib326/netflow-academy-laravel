@@ -150,7 +150,40 @@ class LessonModuleController extends Controller
     }
 
     /**
-     * Submit a lesson (assignment or quiz) by lesson slug
+     * @OA\Post(
+     *     path="/api/lessons/{slug}/submit",
+     *     summary="Submit a lesson (assignment or quiz) by lesson slug",
+     *     tags={"Lessons"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="slug",
+     *         in="path",
+     *         required=true,
+     *         description="Lesson slug",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 @OA\Property(property="content", type="string", description="Assignment text"),
+     *                 @OA\Property(property="answers", type="string", description="Quiz answers as JSON array"),
+     *                 @OA\Property(property="files[]", type="array", @OA\Items(type="string", format="binary"), description="Files (image, pdf, doc, zip)")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Submission created",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="submission", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="You must purchase this course to submit this lesson."),
+     *     @OA\Response(response=404, description="Lesson not found")
+     * )
      */
     public function submitBySlug(Request $request, string $slug)
     {
@@ -214,7 +247,28 @@ class LessonModuleController extends Controller
     }
 
     /**
-     * Get submissions by lesson slug
+     * @OA\Get(
+     *     path="/api/lessons/{slug}/submissions",
+     *     summary="Get submissions by lesson slug (for authenticated user)",
+     *     tags={"Lessons"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="slug",
+     *         in="path",
+     *         required=true,
+     *         description="Lesson slug",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Submissions list",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="submissions", type="array", @OA\Items(type="object"))
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Lesson not found")
+     * )
      */
     public function submissionsBySlug(string $slug)
     {
