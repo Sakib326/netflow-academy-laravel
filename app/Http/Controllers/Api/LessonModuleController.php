@@ -116,16 +116,18 @@ class LessonModuleController extends Controller
             ->firstOrFail();
 
         $user = Auth::user();
+        $course = $lesson->module->course ?? null;
         $courseId = $lesson->module->course_id ?? null;
 
-        $isEnrolled = $courseId
-            ? Enrollment::where('user_id', $user->id)
+        $isEnrolled = false;
+        if ($course && $courseId) {
+            $isEnrolled = Enrollment::where('user_id', $user->id)
                 ->where('status', 'active')
                 ->whereHas('batch', function ($q) use ($course) {
                     $q->where('course_id', $course->id);
                 })
-                ->exists()
-            : false;
+                ->exists();
+        }
 
         if (!$lesson->is_free && !$isEnrolled) {
             return response()->json([
