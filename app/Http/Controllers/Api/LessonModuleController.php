@@ -194,25 +194,44 @@ class LessonModuleController extends Controller
     public function submitBySlug(Request $request, string $slug)
     {
         $lesson = Lesson::where('slug', $slug)->firstOrFail();
-
-        $request->validate([
-            'content' => 'nullable|string',
-            'answers' => 'nullable|string',
-            'files' => 'nullable|array',
-            'files.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,zip|max:51200',
-        ]);
-
         $user = Auth::user();
 
-        $courseId = $lesson->module->course_id ?? null;
-        $isEnrolled = $courseId
-            ? Enrollment::where('user_id', $user->id)
+        // Dynamic validation rules
+        $rules = [
+            'files' => 'nullable|array',
+            'files.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,zip|max:51200',
+        ];
+
+        if ($lesson->type === 'quiz') {
+            $rules['answers'] = 'required|string';
+        } elseif ($lesson->type === 'assignment') {
+            $rules['content'] = 'nullable|string';
+            // We'll check for at least one of content/files after validation
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($lesson->type === 'assignment') {
+            $hasContent = $request->filled('content');
+            $hasFiles = $request->hasFile('files');
+            if (!$hasContent && !$hasFiles) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'For assignments, you must provide either content or files.',
+                ], 422);
+            }
+        }
+
+        $course = $lesson->module->course ?? null;
+        $isEnrolled = false;
+        if ($course) {
+            $isEnrolled = Enrollment::where('user_id', $user->id)
                 ->where('status', 'active')
                 ->whereHas('batch', function ($q) use ($course) {
                     $q->where('course_id', $course->id);
                 })
-                ->exists()
-            : false;
+                ->exists();
+        }
 
         if (!$lesson->is_free && !$isEnrolled) {
             return response()->json([
