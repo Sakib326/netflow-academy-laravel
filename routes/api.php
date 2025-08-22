@@ -59,9 +59,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/modules/{slug}', [LessonModuleController::class, 'modules']); // ?course_id=...
-    Route::get('/lessons/{slug}', [LessonModuleController::class, 'lesson']);
-    Route::post('/lessons/{slug}/submit', [LessonModuleController::class, 'submit']);
-    Route::get('/lessons/{slug}/submissions', [LessonModuleController::class, 'submissions']);
+    Route::get('/modules/{slug}', [LessonModuleController::class, 'modulesBySlug']);
+    Route::get('/lessons/{slug}', [LessonModuleController::class, 'lessonBySlug']);
+    Route::post('/lessons/{slug}/submit', [LessonModuleController::class, 'submitBySlug']);
+    Route::get('/lessons/{slug}/submissions', [LessonModuleController::class, 'submissionsBySlug']);
 });
