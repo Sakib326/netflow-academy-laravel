@@ -41,7 +41,7 @@ class LessonModuleController extends Controller
     {
         $user = Auth::user();
 
-        $course = Course::with(['modules.lessons.questions', 'modules.lessons.files'])
+        $course = Course::with(['modules.lessons'])
             ->where('slug', $slug)
             ->firstOrFail();
 
@@ -109,7 +109,7 @@ class LessonModuleController extends Controller
      */
     public function lessonBySlug(string $slug)
     {
-        $lesson = Lesson::with(['module:id,course_id,title', 'module.course:id,title', 'questions', 'files'])
+        $lesson = Lesson::with(['module:id,course_id,title', 'module.course:id,title'])
             ->where('slug', $slug)
             ->firstOrFail();
 
