@@ -209,7 +209,7 @@ class CourseController extends Controller
                         'slug' => $lesson->slug,
                         'description' => $lesson->description,
                         'duration' => $lesson->duration,
-                        'lesson_type' => $lesson->lesson_type,
+                        'lesson_type' => $lesson->type,
                         'order' => $lesson->order_index,
                         'is_free' => $lesson->is_free,
                         // Only include content for free lessons
