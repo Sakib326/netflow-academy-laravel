@@ -1373,21 +1373,21 @@
                 ]
             }
         },
-        "/api/modules": {
+        "/api/modules/{slug}": {
             "get": {
                 "tags": [
                     "Lessons"
                 ],
-                "summary": "Get all modules for a course (with lessons, filtered by enrollment)",
-                "operationId": "699850fc71ffecb4aece50d19b46fdb4",
+                "summary": "Get all modules for a course by course slug (with lessons)",
+                "operationId": "27e05dec2d6bf7a1a5ac44169421570c",
                 "parameters": [
                     {
-                        "name": "course_id",
-                        "in": "query",
-                        "description": "Course ID",
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Course slug",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -1404,43 +1404,6 @@
                                         "modules": {
                                             "type": "array",
                                             "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer"
-                                                    },
-                                                    "title": {
-                                                        "type": "string"
-                                                    },
-                                                    "order_index": {
-                                                        "type": "integer"
-                                                    },
-                                                    "lessons": {
-                                                        "type": "array",
-                                                        "items": {
-                                                            "properties": {
-                                                                "id": {
-                                                                    "type": "integer"
-                                                                },
-                                                                "title": {
-                                                                    "type": "string"
-                                                                },
-                                                                "slug": {
-                                                                    "type": "string"
-                                                                },
-                                                                "is_free": {
-                                                                    "type": "boolean"
-                                                                },
-                                                                "type": {
-                                                                    "type": "string"
-                                                                },
-                                                                "order_index": {
-                                                                    "type": "integer"
-                                                                }
-                                                            },
-                                                            "type": "object"
-                                                        }
-                                                    }
-                                                },
                                                 "type": "object"
                                             }
                                         },
@@ -1461,21 +1424,21 @@
                 ]
             }
         },
-        "/api/lessons/{lesson}": {
+        "/api/lessons/{slug}": {
             "get": {
                 "tags": [
                     "Lessons"
                 ],
-                "summary": "Get lesson details (only if free or user is enrolled)",
-                "operationId": "388a518f79052890adf9a0d8890f1237",
+                "summary": "Get lesson details by lesson slug (authorized only)",
+                "operationId": "f1bbfb599ee579a117fb68e7ebbcbf20",
                 "parameters": [
                     {
-                        "name": "lesson",
+                        "name": "slug",
                         "in": "path",
-                        "description": "Lesson ID",
+                        "description": "Lesson slug",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string"
                         }
                     }
                 ],
@@ -1503,127 +1466,9 @@
                     },
                     "403": {
                         "description": "You must purchase this course to access this lesson."
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/lessons/{lesson}/submit": {
-            "post": {
-                "tags": [
-                    "Lessons"
-                ],
-                "summary": "Submit a lesson (quiz or assignment)",
-                "operationId": "3f7315159fa18d67fbf4b383dc25573f",
-                "parameters": [
-                    {
-                        "name": "lesson",
-                        "in": "path",
-                        "description": "Lesson ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "properties": {
-                                    "content": {
-                                        "description": "Assignment text",
-                                        "type": "string"
-                                    },
-                                    "answers": {
-                                        "description": "Quiz answers as JSON array",
-                                        "type": "string"
-                                    },
-                                    "files[]": {
-                                        "description": "Files (image, pdf, doc, zip)",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "binary"
-                                        }
-                                    }
-                                },
-                                "type": "object"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Submission created",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean"
-                                        },
-                                        "submission": {
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            }
-        },
-        "/api/lessons/{lesson}/submissions": {
-            "get": {
-                "tags": [
-                    "Lessons"
-                ],
-                "summary": "Get submissions for a lesson (for the authenticated user)",
-                "operationId": "513947e339d1ededdbb64574dfa0c61f",
-                "parameters": [
-                    {
-                        "name": "lesson",
-                        "in": "path",
-                        "description": "Lesson ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Submissions list",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "success": {
-                                            "type": "boolean"
-                                        },
-                                        "submissions": {
-                                            "type": "array",
-                                            "items": {
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
+                    },
+                    "404": {
+                        "description": "Lesson not found"
                     }
                 },
                 "security": [

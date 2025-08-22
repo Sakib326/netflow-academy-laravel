@@ -4,82 +4,75 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\Module;
 use App\Models\Lesson;
 use App\Models\Submission;
 use App\Models\Enrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
 class LessonModuleController extends Controller
 {
     /**
      * @OA\Get(
-     *     path="/api/modules",
-     *     summary="Get all modules for a course (with lessons, filtered by enrollment)",
+     *     path="/api/modules/{slug}",
+     *     summary="Get all modules for a course by course slug (with lessons)",
      *     tags={"Lessons"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="course_id",
-     *         in="query",
+     *         name="slug",
+     *         in="path",
      *         required=true,
-     *         description="Course ID",
-     *         @OA\Schema(type="integer")
+     *         description="Course slug",
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Modules with lessons",
      *         @OA\JsonContent(
      *             @OA\Property(property="success", type="boolean"),
-     *             @OA\Property(property="modules", type="array",
-     *                 @OA\Items(
-     *                     @OA\Property(property="id", type="integer"),
-     *                     @OA\Property(property="title", type="string"),
-     *                     @OA\Property(property="order_index", type="integer"),
-     *                     @OA\Property(property="lessons", type="array",
-     *                         @OA\Items(
-     *                             @OA\Property(property="id", type="integer"),
-     *                             @OA\Property(property="title", type="string"),
-     *                             @OA\Property(property="slug", type="string"),
-     *                             @OA\Property(property="is_free", type="boolean"),
-     *                             @OA\Property(property="type", type="string"),
-     *                             @OA\Property(property="order_index", type="integer"),
-     *                         )
-     *                     )
-     *                 )
-     *             ),
+     *             @OA\Property(property="modules", type="array", @OA\Items(type="object")),
      *             @OA\Property(property="enrolled", type="boolean")
      *         )
      *     )
      * )
      */
-    public function modules(Request $request)
+    public function modulesBySlug(string $slug)
     {
-        $request->validate([
-            'course_id' => 'required|exists:courses,id',
-        ]);
-
-        $courseId = $request->input('course_id');
         $user = Auth::user();
 
-        // Check if user is enrolled in this course
+        $course = Course::with(['modules.lessons.questions', 'modules.lessons.files'])
+            ->where('slug', $slug)
+            ->firstOrFail();
+
         $isEnrolled = Enrollment::where('user_id', $user->id)
-            ->where('course_id', $courseId)
+            ->where('course_id', $course->id)
             ->where('status', 'active')
             ->exists();
 
-        $modules = Module::where('course_id', $courseId)
-            ->with(['lessons' => function ($q) use ($isEnrolled) {
-                $q->select('id', 'module_id', 'title', 'slug', 'is_free', 'type', 'order_index')
-                  ->orderBy('order_index');
-                if (!$isEnrolled) {
-                    $q->where('is_free', true);
-                }
-            }])
-            ->orderBy('order_index')
-            ->get(['id', 'course_id', 'title', 'order_index']);
+        $modules = $course->modules->map(function ($module) {
+            return [
+                'id' => $module->id,
+                'title' => $module->title,
+                'description' => $module->description,
+                'order' => $module->order_index,
+                'lessons' => $module->lessons->map(function ($lesson) {
+                    return [
+                        'id' => $lesson->id,
+                        'title' => $lesson->title,
+                        'slug' => $lesson->slug,
+                        'description' => $lesson->description,
+                        'duration' => $lesson->duration,
+                        'lesson_type' => $lesson->type,
+                        'order' => $lesson->order_index,
+                        'is_free' => $lesson->is_free,
+                        'content' => $lesson->content,
+                        'questions' => $lesson->questions,
+                        'files' => $lesson->files,
+                    ];
+                })
+            ];
+        });
 
         return response()->json([
             'success' => true,
@@ -90,16 +83,16 @@ class LessonModuleController extends Controller
 
     /**
      * @OA\Get(
-     *     path="/api/lessons/{lesson}",
-     *     summary="Get lesson details (only if free or user is enrolled)",
+     *     path="/api/lessons/{slug}",
+     *     summary="Get lesson details by lesson slug (authorized only)",
      *     tags={"Lessons"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="lesson",
+     *         name="slug",
      *         in="path",
      *         required=true,
-     *         description="Lesson ID",
-     *         @OA\Schema(type="integer")
+     *         description="Lesson slug",
+     *         @OA\Schema(type="string")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -110,17 +103,15 @@ class LessonModuleController extends Controller
      *             @OA\Property(property="enrolled", type="boolean")
      *         )
      *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="You must purchase this course to access this lesson."
-     *     )
+     *     @OA\Response(response=403, description="You must purchase this course to access this lesson."),
+     *     @OA\Response(response=404, description="Lesson not found")
      * )
      */
-    public function lesson(Request $request, $lessonId)
+    public function lessonBySlug(string $slug)
     {
-        $lesson = Lesson::with(['module:id,course_id,title', 'module.course:id,title'])
-            ->select('id', 'module_id', 'title', 'slug', 'type', 'content', 'is_free', 'order_index', 'status')
-            ->findOrFail($lessonId);
+        $lesson = Lesson::with(['module:id,course_id,title', 'module.course:id,title', 'questions', 'files'])
+            ->where('slug', $slug)
+            ->firstOrFail();
 
         $user = Auth::user();
         $courseId = $lesson->module->course_id ?? null;
@@ -141,59 +132,39 @@ class LessonModuleController extends Controller
 
         return response()->json([
             'success' => true,
-            'lesson' => $lesson,
+            'lesson' => [
+                'id' => $lesson->id,
+                'title' => $lesson->title,
+                'slug' => $lesson->slug,
+                'description' => $lesson->description,
+                'duration' => $lesson->duration,
+                'lesson_type' => $lesson->type,
+                'order' => $lesson->order_index,
+                'is_free' => $lesson->is_free,
+                'content' => $lesson->content,
+                'questions' => $lesson->questions,
+                'files' => $lesson->files,
+            ],
             'enrolled' => $isEnrolled,
         ]);
     }
 
     /**
-     * @OA\Post(
-     *     path="/api/lessons/{lesson}/submit",
-     *     summary="Submit a lesson (quiz or assignment)",
-     *     tags={"Lessons"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="lesson",
-     *         in="path",
-     *         required=true,
-     *         description="Lesson ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(
-     *                 @OA\Property(property="content", type="string", description="Assignment text"),
-     *                 @OA\Property(property="answers", type="string", description="Quiz answers as JSON array"),
-     *                 @OA\Property(property="files[]", type="array", @OA\Items(type="string", format="binary"), description="Files (image, pdf, doc, zip)"),
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Submission created",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean"),
-     *             @OA\Property(property="submission", type="object")
-     *         )
-     *     )
-     * )
+     * Submit a lesson (assignment or quiz) by lesson slug
      */
-    public function submit(Request $request, $lessonId)
+    public function submitBySlug(Request $request, string $slug)
     {
-        $lesson = Lesson::findOrFail($lessonId);
+        $lesson = Lesson::where('slug', $slug)->firstOrFail();
 
         $request->validate([
             'content' => 'nullable|string',
-            'answers' => 'nullable|string', // JSON string for quiz
+            'answers' => 'nullable|string',
             'files' => 'nullable|array',
             'files.*' => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,zip|max:51200',
         ]);
 
         $user = Auth::user();
 
-        // Check access: only enrolled or free lesson
         $courseId = $lesson->module->course_id ?? null;
         $isEnrolled = $courseId
             ? Enrollment::where('user_id', $user->id)
@@ -201,6 +172,7 @@ class LessonModuleController extends Controller
                 ->where('status', 'active')
                 ->exists()
             : false;
+
         if (!$lesson->is_free && !$isEnrolled) {
             return response()->json([
                 'success' => false,
@@ -208,7 +180,6 @@ class LessonModuleController extends Controller
             ], 403);
         }
 
-        // Save uploaded files
         $filePaths = [];
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
@@ -216,7 +187,6 @@ class LessonModuleController extends Controller
             }
         }
 
-        // Prepare content for assignment or quiz
         $content = null;
         if ($lesson->type === 'assignment') {
             $content = $request->input('content', '');
@@ -244,33 +214,15 @@ class LessonModuleController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/api/lessons/{lesson}/submissions",
-     *     summary="Get submissions for a lesson (for the authenticated user)",
-     *     tags={"Lessons"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="lesson",
-     *         in="path",
-     *         required=true,
-     *         description="Lesson ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Submissions list",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean"),
-     *             @OA\Property(property="submissions", type="array", @OA\Items(type="object"))
-     *         )
-     *     )
-     * )
+     * Get submissions by lesson slug
      */
-    public function submissions(Request $request, $lessonId)
+    public function submissionsBySlug(string $slug)
     {
+        $lesson = Lesson::where('slug', $slug)->firstOrFail();
+
         $user = Auth::user();
 
-        $submissions = Submission::where('lesson_id', $lessonId)
+        $submissions = $lesson->submissions()
             ->where('user_id', $user->id)
             ->orderByDesc('submitted_at')
             ->get();
