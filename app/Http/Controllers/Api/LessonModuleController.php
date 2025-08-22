@@ -169,7 +169,7 @@ class LessonModuleController extends Controller
      *         @OA\Schema(type="string")
      *     ),
      *     @OA\RequestBody(
-     *         required=true,
+     *         required=false,
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
