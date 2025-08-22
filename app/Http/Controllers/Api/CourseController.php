@@ -214,7 +214,8 @@ class CourseController extends Controller
                         'is_free' => $lesson->is_free,
                         // Only include content for free lessons
                         'content' => $lesson->is_free ? $lesson->content : null,
-                        'video_url' => $lesson->is_free ? $lesson->video_url : null,
+                        'questions' => $lesson->is_free ? $lesson->questions : null,
+                        'files' => $lesson->is_free ? $lesson->files : null,
                     ];
                 })
             ];
