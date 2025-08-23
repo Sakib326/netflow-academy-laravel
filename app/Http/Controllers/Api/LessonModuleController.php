@@ -263,7 +263,7 @@ class LessonModuleController extends Controller
             'type' => $lesson->type,
             'content' => $content,
             'files' => $filePaths,
-            'status' => 'submitted',
+            'status' => 'pending',
             'submitted_at' => now(),
         ]);
 
