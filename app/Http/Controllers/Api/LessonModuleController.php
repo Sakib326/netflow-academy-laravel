@@ -206,7 +206,6 @@ class LessonModuleController extends Controller
             $rules['answers'] = 'required|string';
         } elseif ($lesson->type === 'assignment') {
             $rules['content'] = 'nullable|string';
-            // We'll check for at least one of content/files after validation
         }
 
         $validated = $request->validate($rules);
@@ -248,13 +247,28 @@ class LessonModuleController extends Controller
         }
 
         $content = null;
+        $score = null;
+        $max_score = null;
+
         if ($lesson->type === 'assignment') {
             $content = $request->input('content', '');
         } elseif ($lesson->type === 'quiz') {
-            $answers = $request->input('answers', '[]');
-            $content = [
-                'answers' => json_decode($answers, true) ?? [],
-            ];
+            $answers = json_decode($request->input('answers', '[]'), true) ?? [];
+            $questions = json_decode($lesson->questions, true) ?? [];
+            $content = ['answers' => $answers];
+
+            // Auto-grade quiz
+            $score = 0;
+            $max_score = 0;
+            foreach ($questions as $idx => $question) {
+                $userAnswer = $answers[$idx]['submitted_option'] ?? null;
+                $correctAnswer = $question['correct_answer'] ?? null;
+                $marks = $question['marks'] ?? 1;
+                $max_score += $marks;
+                if ($userAnswer && strtolower($userAnswer) === strtolower($correctAnswer)) {
+                    $score += $marks;
+                }
+            }
         }
 
         $submission = Submission::create([
@@ -263,7 +277,9 @@ class LessonModuleController extends Controller
             'type' => $lesson->type,
             'content' => $content,
             'files' => $filePaths,
-            'status' => 'pending',
+            'score' => $score,
+            'max_score' => $max_score,
+            'status' => $lesson->type === 'quiz' ? 'graded' : 'pending',
             'submitted_at' => now(),
         ]);
 
