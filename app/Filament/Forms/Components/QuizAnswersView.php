@@ -23,7 +23,7 @@ class QuizAnswersView extends Field
     public function getAnswersData(): array
     {
         $record = $this->getRecord();
-        
+
         if (!$record || !$record->content || !isset($record->content['answers'])) {
             return [
                 'answers' => [],
@@ -40,7 +40,7 @@ class QuizAnswersView extends Field
         $lesson = $record->lesson;
         $questions = $lesson ? $lesson->getQuestions() : [];
         $answers = $record->content['answers'] ?? [];
-        
+
         $processedAnswers = [];
         $totalScore = 0;
         $maxScore = 0;
@@ -52,7 +52,7 @@ class QuizAnswersView extends Field
             $correctAnswer = $question['correct_answer'] ?? $question['correct_option'] ?? null;
             $marks = $question['marks'] ?? 1;
             $isCorrect = $userAnswer === $correctAnswer;
-            
+
             if ($isCorrect) {
                 $totalScore += $marks;
                 $correctCount++;
@@ -86,8 +86,10 @@ class QuizAnswersView extends Field
 
     protected function getOptionText($question, $optionKey): string
     {
-        if (!$optionKey) return 'No answer';
-        
+        if (!$optionKey || !is_string($optionKey)) {
+            return 'No answer';
+        }
+
         // Handle options array format
         if (isset($question['options']) && is_array($question['options'])) {
             foreach ($question['options'] as $option) {
@@ -96,13 +98,13 @@ class QuizAnswersView extends Field
                 }
             }
         }
-        
+
         // Handle direct option fields (option_a, option_b, etc.)
         $optionField = 'option_' . strtolower($optionKey);
         if (isset($question[$optionField])) {
             return $question[$optionField];
         }
-        
+
         return $optionKey;
     }
 
