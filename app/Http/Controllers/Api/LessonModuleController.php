@@ -254,7 +254,12 @@ class LessonModuleController extends Controller
             $content = $request->input('content', '');
         } elseif ($lesson->type === 'quiz') {
             $answers = json_decode($request->input('answers', '[]'), true) ?? [];
-            $questions = json_decode($lesson->questions, true) ?? [];
+
+            if (is_array($lesson->questions)) {
+                $questions = $lesson->questions;
+            } else {
+                $questions = json_decode($lesson->questions, true) ?? [];
+            }
             $content = ['answers' => $answers];
 
             // Auto-grade quiz
