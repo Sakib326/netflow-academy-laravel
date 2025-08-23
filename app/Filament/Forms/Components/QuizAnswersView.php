@@ -47,22 +47,26 @@ class QuizAnswersView extends Field
         $correctCount = 0;
 
         foreach ($questions as $index => $question) {
-            $questionId = $question['id'] ?? $index;
-            $userAnswer = $answers[$questionId] ?? null;
-            $correctAnswer = $question['correct_answer'] ?? $question['correct_option'] ?? null;
+            $answer = $answers[$index] ?? null;
             $marks = $question['marks'] ?? 1;
-            $isCorrect = $userAnswer === $correctAnswer;
+            $maxScore += $marks;
+
+            $submittedOption = $answer['submitted_option'] ?? null;
+            $submittedText = $answer['submitted_text'] ?? null;
+            $correctOption = $answer['correct_option'] ?? ($question['correct_answer'] ?? null);
+            $correctText = $answer['correct_text'] ?? null;
+
+            $isCorrect = $submittedOption && $correctOption && strtolower($submittedOption) === strtolower($correctOption);
 
             if ($isCorrect) {
                 $totalScore += $marks;
                 $correctCount++;
             }
-            $maxScore += $marks;
 
             $processedAnswers[] = [
                 'question' => $question['question'] ?? "Question " . ($index + 1),
-                'user_answer' => $this->getOptionText($question, $userAnswer),
-                'correct_answer' => $this->getOptionText($question, $correctAnswer),
+                'user_answer' => $submittedText ?? $this->getOptionText($question, $submittedOption),
+                'correct_answer' => $correctText ?? $this->getOptionText($question, $correctOption),
                 'is_correct' => $isCorrect,
                 'marks' => $marks,
                 'earned_marks' => $isCorrect ? $marks : 0,
