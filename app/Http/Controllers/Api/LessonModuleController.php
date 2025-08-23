@@ -260,20 +260,27 @@ class LessonModuleController extends Controller
             } else {
                 $questions = json_decode($lesson->questions, true) ?? [];
             }
-            $content = ['answers' => $answers];
 
-            // Auto-grade quiz
             $score = 0;
             $max_score = 0;
+
             foreach ($questions as $idx => $question) {
                 $userAnswer = $answers[$idx]['submitted_option'] ?? null;
-                $correctAnswer = $question['correct_answer'] ?? null;
                 $marks = $question['marks'] ?? 1;
                 $max_score += $marks;
-                if ($userAnswer && strtolower($userAnswer) === strtolower($correctAnswer)) {
+
+                // Add correct_option and correct_text to answer
+                $answers[$idx]['correct_option'] = $question['correct_answer'] ?? '';
+                $correctOptionKey = isset($question['correct_answer']) ? 'option_' . strtolower($question['correct_answer']) : null;
+                $answers[$idx]['correct_text'] = $correctOptionKey && isset($question[$correctOptionKey]) ? trim($question[$correctOptionKey]) : '';
+
+                // Grade
+                if ($userAnswer && strtolower($userAnswer) === strtolower($question['correct_answer'] ?? '')) {
                     $score += $marks;
                 }
             }
+
+            $content = ['answers' => $answers];
         }
 
         $submission = Submission::create([
