@@ -61,10 +61,14 @@ class CourseEnrollmentController extends Controller
         }
 
         // 2. Check if already enrolled
+
         $existing = Enrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
+            ->whereHas('batch', function ($q) use ($course) {
+                $q->where('course_id', $course->id);
+            })
             ->orderByDesc('id')
             ->first();
+
 
         if ($existing && $existing->status === 'active') {
             return response()->json([
@@ -103,7 +107,6 @@ class CourseEnrollmentController extends Controller
         try {
             $enrollment = Enrollment::create([
                 'user_id' => $user->id,
-                'course_id' => $course->id,
                 'batch_id' => $batch->id,
                 'status' => 'pending',
             ]);

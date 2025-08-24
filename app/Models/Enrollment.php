@@ -29,10 +29,7 @@ class Enrollment extends Model
         return $this->belongsTo(Batch::class);
     }
 
-    public function course()
-    {
-        return $this->hasOneThrough(Course::class, Batch::class, 'id', 'id', 'batch_id', 'course_id');
-    }
+
 
     // Helper Functions
     public function isActive()
@@ -49,22 +46,35 @@ class Enrollment extends Model
     {
         $course = $this->batch->course;
         $totalLessons = $course->getTotalLessons();
-        
+
         if ($totalLessons == 0) {
             $this->update(['progress_percentage' => 100]);
             return;
         }
-        
+
         $completedLessons = Submission::where('user_id', $this->user_id)
             ->whereIn('lesson_id', $course->lessons()->pluck('id'))
             ->whereIn('type', ['completion', 'quiz', 'assignment'])
             ->count();
-            
+
         $progress = round(($completedLessons / $totalLessons) * 100, 2);
         $this->update(['progress_percentage' => $progress]);
-        
+
         if ($progress >= 100 && $this->status === 'active') {
             $this->update(['status' => 'completed']);
         }
+    }
+
+    public function course()
+    {
+        // Correct: go through batch to course
+        return $this->hasOneThrough(
+            Course::class,
+            Batch::class,
+            'id',        // Foreign key on Batch table...
+            'id',        // Foreign key on Course table...
+            'batch_id',  // Local key on Enrollment table...
+            'course_id'  // Local key on Batch table...
+        );
     }
 }
