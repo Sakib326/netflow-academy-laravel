@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\UserCourseManagementController;
+use App\Http\Controllers\Api\CourseEnrollmentController;
 use App\Http\Controllers\Api\LessonModuleController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DIscussionController;
@@ -21,6 +22,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/update', [AuthController::class, 'update']); // Changed to POST for form data
         Route::post('/update-password', [AuthController::class, 'updatePassword']);
         Route::post('/logout', [AuthController::class, 'logout']);
+
     });
 });
 
@@ -33,6 +35,8 @@ Route::get('/reviews', [CourseController::class, 'reviews']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
     Route::get('/my-courses/status-count', [UserCourseManagementController::class, 'myCoursesStatusCount']);
+    Route::post('/enroll/{slug}', [CourseEnrollmentController::class, 'makeEnrollment']);
+
 
 });
 

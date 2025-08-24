@@ -683,6 +683,83 @@
                 }
             }
         },
+        "/api/enroll/{slug}": {
+            "post": {
+                "tags": [
+                    "Enrollment"
+                ],
+                "summary": "Enroll a student in a course by slug",
+                "operationId": "cb7c9f1178d0fd9baa5750e221ca41d3",
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "description": "Course slug",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "discount_amount": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 10
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Enrollment created or already enrolled",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "enrollment_id": {
+                                            "type": "integer"
+                                        },
+                                        "batch_id": {
+                                            "type": "integer"
+                                        },
+                                        "payment_id": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Course not found"
+                    },
+                    "400": {
+                        "description": "Already enrolled"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/courses/{course_id}/discussions": {
             "get": {
                 "tags": [
@@ -2623,6 +2700,10 @@
         {
             "name": "Reviews",
             "description": "Reviews"
+        },
+        {
+            "name": "Enrollment",
+            "description": "Enrollment"
         },
         {
             "name": "Discussions",
