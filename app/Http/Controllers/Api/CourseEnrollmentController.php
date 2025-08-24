@@ -81,7 +81,11 @@ class CourseEnrollmentController extends Controller
 
         // 3. Find last active batch or create new if needed
         $batch = Batch::where('course_id', $course->id)
-            ->where('is_active', 'true')
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>', now());
+            })
             ->orderByDesc('start_date')
             ->first();
 
@@ -93,7 +97,7 @@ class CourseEnrollmentController extends Controller
             $batch = Batch::create([
                 'course_id' => $course->id,
                 'name' => $course->title . ' Batch ' . (Batch::where('course_id', $course->id)->count() + 1),
-                'is_active' => 'true',
+                'is_active' => true,
                 'start_date' => now(),
             ]);
         }
