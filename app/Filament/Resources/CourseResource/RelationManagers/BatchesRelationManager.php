@@ -52,16 +52,9 @@ class BatchesRelationManager extends RelationManager
                             ->after('start_date')
                             ->columnSpan(1),
 
-                        Forms\Components\Select::make('status')
-                            ->options([
-                                'draft' => 'Draft',
-                                'open' => 'Open for Enrollment',
-                                'in_progress' => 'In Progress',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
-                            ->default('draft')
-                            ->required()
+                        Forms\Components\Toggle::make('is_active')
+                            ->label('Is Active')
+                            ->default(true)
                             ->columnSpan(1),
                     ])
                     ->columns(3),
