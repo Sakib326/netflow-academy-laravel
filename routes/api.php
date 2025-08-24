@@ -32,6 +32,8 @@ Route::get('/reviews', [CourseController::class, 'reviews']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
+    Route::get('/my-courses/status-count', [UserCourseManagementController::class, 'myCoursesStatusCount']);
+
 });
 
 Route::prefix('courses/{course_id}')->group(function () {

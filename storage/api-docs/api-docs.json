@@ -1607,6 +1607,50 @@
                     }
                 ]
             }
+        },
+        "/api/my-courses/status-count": {
+            "get": {
+                "tags": [
+                    "User Courses"
+                ],
+                "summary": "Get count of enrollments by status for the current user",
+                "operationId": "8eeae30af004504e85b65d9d767563e9",
+                "responses": {
+                    "200": {
+                        "description": "Status wise enrollment count",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "active": {
+                                            "type": "integer",
+                                            "example": 2
+                                        },
+                                        "completed": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "expired": {
+                                            "type": "integer",
+                                            "example": 0
+                                        },
+                                        "pending": {
+                                            "type": "integer",
+                                            "example": 0
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
         }
     },
     "components": {
@@ -2591,6 +2635,10 @@
         {
             "name": "Lessons",
             "description": "Lessons"
+        },
+        {
+            "name": "User Courses",
+            "description": "User Courses"
         }
     ]
 }

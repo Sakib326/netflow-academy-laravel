@@ -152,4 +152,42 @@ class UserCourseManagementController extends Controller
         // TODO: Implement your next class calculation logic here
         return null;
     }
+
+    /**
+    * @OA\Get(
+    *     path="/api/my-courses/status-count",
+    *     summary="Get count of enrollments by status for the current user",
+    *     tags={"User Courses"},
+    *     security={{"sanctum":{}}},
+    *     @OA\Response(
+    *         response=200,
+    *         description="Status wise enrollment count",
+    *         @OA\JsonContent(
+    *             @OA\Property(property="active", type="integer", example=2),
+    *             @OA\Property(property="completed", type="integer", example=1),
+    *             @OA\Property(property="expired", type="integer", example=0),
+    *             @OA\Property(property="pending", type="integer", example=0)
+    *         )
+    *     )
+    * )
+    */
+    public function myCoursesStatusCount(Request $request)
+    {
+        $user = $request->user();
+
+        $counts = Enrollment::where('user_id', $user->id)
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
+        // Ensure all statuses are present in the response
+        $allStatuses = ['active', 'completed', 'expired', 'pending'];
+        $result = [];
+        foreach ($allStatuses as $status) {
+            $result[$status] = (int)($counts[$status] ?? 0);
+        }
+
+        return response()->json($result);
+    }
 }
