@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use OpenApi\Attributes as OA;
 use Carbon\Carbon;
 
-class EnrollmentController extends Controller
+class UserCourseManagementController extends Controller
 {
     #[OA\Schema(
         schema: "EnrolledCourse",
