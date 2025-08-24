@@ -182,7 +182,7 @@ class UserCourseManagementController extends Controller
             ->toArray();
 
         // Ensure all statuses are present in the response
-        $allStatuses = ['active', 'completed', 'expired', 'pending'];
+        $allStatuses = ['active', 'completed', 'dropped', 'suspended', 'pending'];
         $result = [];
         foreach ($allStatuses as $status) {
             $result[$status] = (int)($counts[$status] ?? 0);
