@@ -104,6 +104,7 @@ class UserCourseManagementController extends Controller
                 'batch' => $batch ? [
                     'id' => $batch->id,
                     'name' => $batch->name,
+                    'zoom_link' => $batch->zoom_link,
                     'start_date' => $batch->start_date,
                     'end_date' => $batch->end_date,
                     'status' => $batchStatus,

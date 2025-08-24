@@ -30,6 +30,11 @@ class BatchesRelationManager extends RelationManager
                             ->placeholder('Batch 1 - January 2024')
                             ->columnSpan(2),
 
+                        Forms\Components\TextInput::make('zoom_link')
+                            ->maxLength(255)
+                            ->placeholder('https://zoom.us/j/your-meeting-id')
+                            ->columnSpan(2),
+
                         Forms\Components\TextInput::make('max_students')
                             ->label('Maximum Students')
                             ->numeric()
@@ -69,7 +74,10 @@ class BatchesRelationManager extends RelationManager
                             ->schema([
                                 Forms\Components\Select::make('user_id')
                                     ->label('Student')
-                                    ->relationship('user', 'name', fn($query) => 
+                                    ->relationship(
+                                        'user',
+                                        'name',
+                                        fn ($query) =>
                                         $query->where('role', 'student')
                                     )
                                     ->searchable()
@@ -140,7 +148,8 @@ class BatchesRelationManager extends RelationManager
                                     ->collapsible(),
                             ])
                             ->columns(5)
-                            ->itemLabel(fn (array $state): string => 
+                            ->itemLabel(
+                                fn (array $state): string =>
                                 User::find($state['user_id'])?->name ?? 'New Student'
                             )
                             ->collapsible()
@@ -179,7 +188,7 @@ class BatchesRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('active_enrollments_count')
                     ->label('Active')
-                    ->counts(['enrollments' => fn($query) => $query->where('status', 'active')])
+                    ->counts(['enrollments' => fn ($query) => $query->where('status', 'active')])
                     ->badge()
                     ->color('success'),
 
@@ -229,7 +238,7 @@ class BatchesRelationManager extends RelationManager
                     ->label('Add Batch')
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['course_id'] = $this->ownerRecord->id;
-                        
+
                         // Handle enrollments and payments
                         if (isset($data['enrollments'])) {
                             foreach ($data['enrollments'] as &$enrollment) {
@@ -242,13 +251,13 @@ class BatchesRelationManager extends RelationManager
                                         'transaction_id' => $enrollment['transaction_id'] ?? null,
                                     ];
                                 }
-                                
+
                                 // Remove payment fields from enrollment data
-                                unset($enrollment['payment_amount'], $enrollment['payment_status'], 
-                                      $enrollment['payment_method'], $enrollment['transaction_id']);
+                                unset($enrollment['payment_amount'], $enrollment['payment_status'],
+                                    $enrollment['payment_method'], $enrollment['transaction_id']);
                             }
                         }
-                        
+
                         return $data;
                     })
                     ->after(function ($record, array $data) {
@@ -278,7 +287,7 @@ class BatchesRelationManager extends RelationManager
                                 $payment = Payment::where('user_id', $enrollment['user_id'])
                                     ->where('course_id', $this->ownerRecord->id)
                                     ->first();
-                                
+
                                 if ($payment) {
                                     $enrollment['payment_amount'] = $payment->amount;
                                     $enrollment['payment_status'] = $payment->status;
@@ -287,7 +296,7 @@ class BatchesRelationManager extends RelationManager
                                 }
                             }
                         }
-                        
+
                         return $data;
                     }),
 

@@ -45,36 +45,54 @@ class LessonModuleController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
+
         $isEnrolled = Enrollment::where('user_id', $user->id)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'completed'])
             ->whereHas('batch', function ($q) use ($course) {
                 $q->where('course_id', $course->id);
             })
             ->exists();
 
-        $modules = $course->modules->map(function ($module) {
-            return [
-                'id' => $module->id,
-                'title' => $module->title,
-                'description' => $module->description,
-                'order' => $module->order_index,
-                'lessons' => $module->lessons->map(function ($lesson) {
-                    return [
-                        'id' => $lesson->id,
-                        'title' => $lesson->title,
-                        'slug' => $lesson->slug,
-                        'description' => $lesson->description,
-                        'duration' => $lesson->duration,
-                        'lesson_type' => $lesson->type,
-                        'order' => $lesson->order_index,
-                        'is_free' => $lesson->is_free,
-                        'content' => $lesson->content,
-                        'questions' => $lesson->questions,
-                        'files' => $lesson->files,
-                    ];
-                })
-            ];
-        });
+
+        // Get user's batch id for this course (if enrolled)
+        $userBatchId = null;
+        $enrollment = Enrollment::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereHas('batch', function ($q) use ($course) {
+                $q->where('course_id', $course->id);
+            })
+            ->first();
+        if ($enrollment && $enrollment->batch_id) {
+            $userBatchId = $enrollment->batch_id;
+        }
+
+        $modules = $course->modules
+            ->filter(function ($module) use ($userBatchId) {
+                return is_null($module->batch_id) || $module->batch_id == $userBatchId;
+            })
+            ->map(function ($module) {
+                return [
+                    'id' => $module->id,
+                    'title' => $module->title,
+                    'description' => $module->description,
+                    'order' => $module->order_index,
+                    'lessons' => $module->lessons->map(function ($lesson) {
+                        return [
+                            'id' => $lesson->id,
+                            'title' => $lesson->title,
+                            'slug' => $lesson->slug,
+                            'description' => $lesson->description,
+                            'duration' => $lesson->duration,
+                            'lesson_type' => $lesson->type,
+                            'order' => $lesson->order_index,
+                            'is_free' => $lesson->is_free,
+                            'content' => $lesson->content,
+                            'questions' => $lesson->questions,
+                            'files' => $lesson->files,
+                        ];
+                    })
+                ];
+            });
 
         return response()->json([
             'success' => true,

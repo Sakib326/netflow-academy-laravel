@@ -1,7 +1,5 @@
 <?php
 
-
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +10,7 @@ class Batch extends Model
     use HasFactory;
 
     protected $fillable = [
-        'course_id', 'name', 'start_date', 'end_date', 'max_students', 'is_active'
+        'course_id', 'name', 'start_date', 'end_date', 'max_students', 'is_active',"zoom_link"
     ];
 
     protected $casts = [
@@ -74,7 +72,7 @@ class Batch extends Model
         return $this->end_date && $this->end_date <= now();
     }
 
-    
+
     public function exams(): HasMany
     {
         return $this->hasMany(Exam::class, 'batch_id');

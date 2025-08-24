@@ -196,7 +196,8 @@ class CourseController extends Controller
         ->firstOrFail();
 
         // Get only free lessons content
-        $modules = $course->modules->map(function ($module) {
+
+        $modules = $course->modules->where('batch_id', null)->map(function ($module) {
             return [
                 'id' => $module->id,
                 'title' => $module->title,
@@ -220,6 +221,7 @@ class CourseController extends Controller
                 })
             ];
         });
+
 
         // Calculate average rating
         $averageRating = $course->reviews->avg('rating') ?? 0;
