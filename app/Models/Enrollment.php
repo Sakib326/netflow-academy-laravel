@@ -10,7 +10,7 @@ class Enrollment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'batch_id', 'enrolled_at', 'status', 'progress_percentage'
+        'user_id', 'batch_id', 'enrolled_at', 'status', 'progress_percentage','order_id'
     ];
 
     protected $casts = [
@@ -76,5 +76,10 @@ class Enrollment extends Model
             'batch_id',  // Local key on Enrollment table...
             'course_id'  // Local key on Batch table...
         );
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,8 +10,8 @@ class Payment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'course_id', 'amount', 'status', 
-        'payment_method', 'transaction_id'
+        'user_id', 'course_id', 'amount', 'status',
+        'payment_method', 'transaction_id','order_id'
     ];
 
     protected $casts = [
@@ -62,5 +61,10 @@ class Payment extends Model
     public function markAsFailed()
     {
         $this->update(['status' => 'failed']);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 }

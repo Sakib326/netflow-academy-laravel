@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\CourseEnrollmentController;
 use App\Http\Controllers\Api\LessonModuleController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DIscussionController;
+use App\Http\Controllers\Api\OrderController;                                                                                   
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -69,4 +70,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/lessons/{slug}', [LessonModuleController::class, 'lessonBySlug']);
     Route::post('/lessons/{slug}/submit', [LessonModuleController::class, 'submitBySlug']);
     Route::get('/lessons/{slug}/submissions', [LessonModuleController::class, 'submissionsBySlug']);
+
+
+
+    Route::post('/orders/create/{slug}', [OrderController::class, 'createOrder']);
+    Route::get('/orders/my-orders', [OrderController::class, 'getMyOrders']);
+    Route::get('/orders/{orderNumber}', [OrderController::class, 'getOrderDetails']);
+    Route::post('/orders/{orderNumber}/cancel', [OrderController::class, 'cancelOrder']);
+    Route::get('/orders/stats', [OrderController::class, 'getOrderStats']);
+
 });

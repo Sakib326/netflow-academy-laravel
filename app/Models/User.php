@@ -1,6 +1,7 @@
 <?php
 
 // Models\User.php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,9 +9,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use OpenApi\Attributes as OA;
-
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[OA\Schema(
     schema: "Instructor",
@@ -49,7 +50,9 @@ use Filament\Panel;
 
 class User extends Authenticatable implements FilamentUser
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
 
     protected $fillable = [
         'name', 'email', 'phone', 'password', 'role', 'avatar', 'is_active','bio','email_verified_at', 'designation'
@@ -118,8 +121,10 @@ class User extends Authenticatable implements FilamentUser
     public function hasAccessToCourse($courseId)
     {
         $course = Course::find($courseId);
-        if (!$course || $course->price == 0) return true;
-        
+        if (!$course || $course->price == 0) {
+            return true;
+        }
+
         return $this->payments()
             ->where('course_id', $courseId)
             ->where('status', 'completed')
@@ -129,15 +134,19 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessLesson($lessonId)
     {
         $lesson = Lesson::with('module.course')->find($lessonId);
-        if (!$lesson) return false;
-        if ($lesson->is_free) return true;
-        
+        if (!$lesson) {
+            return false;
+        }
+        if ($lesson->is_free) {
+            return true;
+        }
+
         return $this->hasAccessToCourse($lesson->module->course_id);
     }
 
     public function getEnrolledCourses()
     {
-        return Course::whereHas('batches.enrollments', function($query) {
+        return Course::whereHas('batches.enrollments', function ($query) {
             $query->where('user_id', $this->id)->where('status', 'active');
         })->get();
     }
@@ -145,24 +154,27 @@ class User extends Authenticatable implements FilamentUser
     public function getCourseProgress($courseId)
     {
         $enrollment = $this->enrollments()
-            ->whereHas('batch', function($query) use ($courseId) {
+            ->whereHas('batch', function ($query) use ($courseId) {
                 $query->where('course_id', $courseId);
             })->first();
-            
+
         return $enrollment ? $enrollment->progress_percentage : 0;
     }
 
-     public function canAccessPanel(Panel $panel): bool
-        {
-            return $this->hasVerifiedEmail() && $this->role === 'admin';
-        }
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->hasVerifiedEmail() && $this->role === 'admin';
+    }
 
     public function hasVerifiedEmail(): bool
     {
         return !is_null($this->email_verified_at);
     }
 
- 
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
     // Exam responses submitted by the user (as student)
     public function examResponses(): HasMany
