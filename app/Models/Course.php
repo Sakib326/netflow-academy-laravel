@@ -1,13 +1,10 @@
 <?php
 
-
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OpenApi\Attributes as OA;
-
 
 #[OA\Schema(
     schema: "CourseList",
@@ -89,14 +86,16 @@ class Course extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title', 'description', 'instructor_id', 'category_id', 
-        'thumbnail', 'price', 'status', 'start_date', 'end_date', 'slug', 'is_featured', 'is_free', 'is_active', 'meta_title', 'meta_description', 'meta_keywords','thumb_video_url', 'discound_price'
+        'title', 'description', 'instructor_id', 'category_id',
+        'thumbnail', 'price', 'status', 'start_date', 'end_date', 'slug', 'is_featured', 'is_free', 'is_active', 'meta_title', 'meta_description', 'meta_keywords','thumb_video_url', 'discound_price', 'course_type',
+    'bundle_courses',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'start_date' => 'date',
-        'end_date' => 'date'
+        'end_date' => 'date',
+         'bundle_courses' => 'array',
     ];
 
     // Relations
@@ -128,8 +127,8 @@ class Course extends Model
     public function students()
     {
         return $this->hasManyThrough(User::class, Enrollment::class, 'batch_id', 'id', 'id', 'user_id')
-            ->whereHas('enrollments', function($query) {
-                $query->whereHas('batch', function($q) {
+            ->whereHas('enrollments', function ($query) {
+                $query->whereHas('batch', function ($q) {
                     $q->where('course_id', $this->id);
                 });
             });
@@ -189,8 +188,10 @@ class Course extends Model
     public function getCompletionRate()
     {
         $total = $this->enrollments()->count();
-        if ($total == 0) return 0;
-        
+        if ($total == 0) {
+            return 0;
+        }
+
         $completed = $this->enrollments()->where('status', 'completed')->count();
         return round(($completed / $total) * 100, 2);
     }
@@ -200,10 +201,62 @@ class Course extends Model
         return $this->hasMany(CourseReview::class);
     }
 
-       // Exams where the user is the instructor
+    // Exams where the user is the instructor
     public function exams(): HasMany
     {
         return $this->hasMany(Exam::class, 'course_id');
+    }
+
+    public function isBundle(): bool
+    {
+        return $this->course_type === 'bundle';
+    }
+
+    public function getBundledCourses()
+    {
+        if (!$this->isBundle() || !$this->bundle_courses) {
+            return collect();
+        }
+
+        return Course::whereIn('id', $this->bundle_courses)->get();
+    }
+
+    public function getBundlePrice(): float
+    {
+        if (!$this->isBundle()) {
+            return $this->price;
+        }
+
+        return $this->getBundledCourses()->sum('price') * 0.85; // 15% bundle discount
+    }
+
+    public function getEffectivePrice(): float
+    {
+        // Return discounted price if available, otherwise regular price
+        return $this->discounted_price ?? $this->price;
+    }
+
+    public function getBundleSavings(): float
+    {
+        if (!$this->isBundle()) {
+            return 0;
+        }
+
+        $originalTotal = $this->getBundleOriginalPrice();
+        $bundlePrice = $this->getEffectivePrice(); // Use bundle's own price/discounted_price
+
+        return max(0, $originalTotal - $bundlePrice);
+    }
+
+    public function getBundleOriginalPrice(): float
+    {
+        if (!$this->isBundle()) {
+            return $this->getEffectivePrice();
+        }
+
+        return $this->getBundledCourses()->sum(function ($course) {
+            return $course->getEffectivePrice();
+        });
     }
 
 }

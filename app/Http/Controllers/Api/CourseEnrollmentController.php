@@ -103,8 +103,11 @@ class CourseEnrollmentController extends Controller
         }
 
         // 4. Calculate amount (discount or price)
+
         $discount = $request->input('discount_amount', 0);
-        $amount = $discount > 0 ? max(0, $course->price - $discount) : $course->price;
+        $basePrice = $course->getEffectivePrice(); // Use effective price (considers discounted_price)
+        $amount = $discount > 0 ? max(0, $basePrice - $discount) : $basePrice;
+
 
         // 5. Create enrollment and payment inside transaction
         DB::beginTransaction();

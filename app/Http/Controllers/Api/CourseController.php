@@ -96,6 +96,12 @@ class CourseController extends Controller
             });
         }
 
+
+        if ($request->filled('course_type')) {
+            $query->where('course_type', $request->course_type);
+        }
+
+
         // Sorting
         switch ($request->get('sort', 'latest')) {
             case 'popular':
@@ -115,7 +121,8 @@ class CourseController extends Controller
 
         // Transform the data
         $courses->getCollection()->transform(function ($course) {
-            return [
+
+            $baseData = [
                 'id' => $course->id,
                 'title' => $course->title,
                 'slug' => $course->slug,
@@ -123,6 +130,7 @@ class CourseController extends Controller
                 'thumbnail' => $course->thumbnail ? asset('storage/' . $course->thumbnail) : null,
                 'price' => $course->price,
                 'discounted_price' => $course->discounted_price,
+                'effective_price' => $course->getEffectivePrice(), // Add this
                 'duration' => $course->duration,
                 'level' => $course->level,
                 'language' => $course->language,
@@ -143,7 +151,20 @@ class CourseController extends Controller
                 ],
                 'created_at' => $course->created_at,
                 'updated_at' => $course->updated_at,
+                // Bundle fields
+                'course_type' => $course->course_type ?? 'single',
+                'is_bundle' => $course->isBundle(),
             ];
+
+            // Add bundle-specific data
+            if ($course->isBundle()) {
+                $baseData['bundle_courses_count'] = $course->getBundledCourses()->count();
+                $baseData['bundle_original_price'] = $course->getBundleOriginalPrice();
+                $baseData['bundle_savings'] = $course->getBundleSavings();
+            }
+
+            return $baseData;
+
         });
 
         return response()->json($courses);
@@ -237,6 +258,7 @@ class CourseController extends Controller
             ];
         }
 
+
         $courseData = [
             'id' => $course->id,
             'title' => $course->title,
@@ -246,6 +268,7 @@ class CourseController extends Controller
             'thumbnail' => $course->thumbnail ? asset('storage/' . $course->thumbnail) : null,
             'price' => $course->price,
             'discounted_price' => $course->discounted_price,
+            'effective_price' => $course->getEffectivePrice(), // Add this
             'duration' => $course->duration,
             'status' => $course->status,
             'total_lessons' => $course->lessons_count,
@@ -268,6 +291,9 @@ class CourseController extends Controller
                 'total_courses' => $course->instructor->courses()->where('is_active', true)->count(),
                 'total_students' => $course->instructor->courses()->withCount('enrollments')->get()->sum('enrollments_count'),
             ],
+            // Bundle fields
+            'course_type' => $course->course_type ?? 'single',
+            'is_bundle' => $course->isBundle(),
             'modules' => $modules,
             'recent_reviews' => $course->reviews->map(function ($review) {
                 return [
@@ -284,6 +310,34 @@ class CourseController extends Controller
             'created_at' => $course->created_at,
             'updated_at' => $course->updated_at,
         ];
+
+        // Add bundle-specific data if it's a bundle
+        if ($course->isBundle()) {
+            $bundledCourses = $course->getBundledCourses();
+
+            $courseData['bundle_courses'] = $bundledCourses->map(function ($bundleCourse) {
+                return [
+                    'id' => $bundleCourse->id,
+                    'title' => $bundleCourse->title,
+                    'slug' => $bundleCourse->slug,
+                    'description' => $bundleCourse->short_description,
+                    'thumbnail' => $bundleCourse->thumbnail ? asset('storage/' . $bundleCourse->thumbnail) : null,
+                    'price' => $bundleCourse->price,
+                    'discounted_price' => $bundleCourse->discounted_price,
+                    'effective_price' => $bundleCourse->getEffectivePrice(),
+                    'duration' => $bundleCourse->duration,
+                    'level' => $bundleCourse->level,
+                    'total_lessons' => $bundleCourse->lessons()->count(),
+                ];
+            });
+
+            $courseData['bundle_original_price'] = $course->getBundleOriginalPrice();
+            $courseData['bundle_savings'] = $course->getBundleSavings();
+
+            // For bundles, don't show individual modules - show bundled courses instead
+            $courseData['modules'] = [];
+        }
+
 
         return response()->json($courseData);
     }
