@@ -154,6 +154,13 @@ class CourseController extends Controller
                 // Bundle fields
                 'course_type' => $course->course_type ?? 'single',
                 'is_bundle' => $course->isBundle(),
+                'group_courses' => $course->isBundle()
+                    ? $course->getBundledCourses()->map(fn ($c) => [
+                        'id' => $c->id,
+                        'title' => $c->title,
+                        'slug' => $c->slug,
+                    ])->values()
+                    : [],
             ];
 
             // Add bundle-specific data
@@ -294,6 +301,13 @@ class CourseController extends Controller
             // Bundle fields
             'course_type' => $course->course_type ?? 'single',
             'is_bundle' => $course->isBundle(),
+            'group_courses' => $course->isBundle()
+                ? $course->getBundledCourses()->map(fn ($c) => [
+                    'id' => $c->id,
+                    'title' => $c->title,
+                    'slug' => $c->slug,
+                ])->values()
+                : [],
             'modules' => $modules,
             'recent_reviews' => $course->reviews->map(function ($review) {
                 return [
