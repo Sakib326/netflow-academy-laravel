@@ -129,7 +129,7 @@ class CourseController extends Controller
                 'description' => $course->short_description,
                 'thumbnail' => $course->thumbnail ? asset('storage/' . $course->thumbnail) : null,
                 'price' => $course->price,
-                'discounted_price' => $course->discounted_price,
+                'discounted_price' => $course->discound_price,
                 'effective_price' => $course->getEffectivePrice(), // Add this
                 'duration' => $course->duration,
                 'level' => $course->level,
@@ -267,7 +267,7 @@ class CourseController extends Controller
             'thumb_video_url' => $course->thumb_video_url,
             'thumbnail' => $course->thumbnail ? asset('storage/' . $course->thumbnail) : null,
             'price' => $course->price,
-            'discounted_price' => $course->discounted_price,
+            'discounted_price' => $course->discound_price,
             'effective_price' => $course->getEffectivePrice(), // Add this
             'duration' => $course->duration,
             'status' => $course->status,

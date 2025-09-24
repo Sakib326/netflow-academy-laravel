@@ -103,9 +103,9 @@ class OrderController extends Controller
         $discountAmount = 0;
 
         // If course has a discounted price, calculate the discount
-        if ($course->discounted_price && $course->discounted_price < $course->price) {
-            $discountAmount = $course->price - $course->discounted_price;
-            $finalAmount = $course->discounted_price;
+        if ($course->discound_price && $course->discound_price < $course->price) {
+            $discountAmount = $course->price - $course->discound_price;
+            $finalAmount = $course->discound_price;
         } else {
             $finalAmount = $course->price;
         }
@@ -291,7 +291,7 @@ class OrderController extends Controller
                 'slug' => $order->course->slug,
                 'thumbnail' => $order->course->thumbnail ? asset('storage/' . $order->course->thumbnail) : null,
                 'price' => $order->course->price,
-                'discounted_price' => $order->course->discounted_price,
+                'discounted_price' => $order->course->discound_price,
                 'course_type' => $order->course->course_type,
             ],
             'enrollment' => null
