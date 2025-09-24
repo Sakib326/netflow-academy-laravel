@@ -32,7 +32,6 @@ class OrderController extends Controller
      *     @OA\RequestBody(
      *         required=false,
      *         @OA\JsonContent(
-     *             @OA\Property(property="discount_amount", type="number", format="float", example=10.00, description="Discount amount to apply"),
      *             @OA\Property(property="notes", type="string", example="Special request", description="Order notes")
      *         )
      *     ),
@@ -94,19 +93,25 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // 4. Validate request
+        // 4. Validate request (ONLY notes now)
         $request->validate([
-            'discount_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string|max:500'
         ]);
 
-        // 5. Calculate pricing
-        $discountAmount = $request->input('discount_amount', 0);
-        $coursePrice = $course->getEffectivePrice();
-        $finalAmount = max(0, $coursePrice - $discountAmount);
+        // 5. Calculate pricing from DB (SERVER-CONTROLLED)
+        $coursePrice = $course->getEffectivePrice(); // This handles price vs discounted_price logic
+        $discountAmount = 0;
+
+        // If course has a discounted price, calculate the discount
+        if ($course->discounted_price && $course->discounted_price < $course->price) {
+            $discountAmount = $course->price - $course->discounted_price;
+            $finalAmount = $course->discounted_price;
+        } else {
+            $finalAmount = $course->price;
+        }
 
         try {
-            // 6. Create order
+            // 6. Create order with DB-calculated prices
             $order = Order::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
@@ -121,6 +126,7 @@ class OrderController extends Controller
                 'message' => 'Order created successfully. Please wait for admin approval.',
                 'order_number' => $order->order_number,
                 'amount' => $finalAmount,
+                'discount_amount' => $discountAmount,
                 'status' => 'pending',
                 'course_title' => $course->title
             ], 201);

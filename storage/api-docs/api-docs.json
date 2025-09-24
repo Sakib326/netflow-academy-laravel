@@ -1709,12 +1709,6 @@
                         "application/json": {
                             "schema": {
                                 "properties": {
-                                    "discount_amount": {
-                                        "description": "Discount amount to apply",
-                                        "type": "number",
-                                        "format": "float",
-                                        "example": 10
-                                    },
                                     "notes": {
                                         "description": "Order notes",
                                         "type": "string",
