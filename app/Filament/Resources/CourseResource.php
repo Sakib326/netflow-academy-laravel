@@ -123,7 +123,7 @@ class CourseResource extends Resource
                             ->step(0.01)
                             ->live(),
 
-                        Forms\Components\TextInput::make('discount_price')
+                        Forms\Components\TextInput::make('discounted_price')
                             ->label('Discount Price')
                             ->numeric()
                             ->prefix('$')
@@ -137,7 +137,7 @@ class CourseResource extends Resource
                             ->afterStateUpdated(function (Set $set, ?bool $state) {
                                 if ($state) {
                                     $set('price', 0);
-                                    $set('discount_price', null);
+                                    $set('discounted_price', null);
                                 }
                             }),
                     ])->columns(3),
@@ -222,14 +222,14 @@ class CourseResource extends Resource
                     ->money('USD')
                     ->sortable()
                     ->description(function ($record) {
-                        if ($record->discount_price) {
+                        if ($record->discounted_price) {
                             return 'Was: $' . number_format($record->price, 2);
                         }
                         return null;
                     })
                     ->color(fn ($record) => $record->is_free ? 'success' : 'primary'),
 
-                Tables\Columns\TextColumn::make('discount_price')
+                Tables\Columns\TextColumn::make('discounted_price')
                     ->label('Discount')
                     ->money('USD')
                     ->placeholder('No discount')
