@@ -2098,6 +2098,81 @@
                 ]
             }
         },
+        "/api/orders/{id}/approve": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Approve a pending order (mark paid)",
+                "operationId": "2fc94570bd0aaf23e7834e64706e2b42",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Order ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order approved"
+                    },
+                    "400": {
+                        "description": "Invalid order status"
+                    },
+                    "403": {
+                        "description": "Not authorized"
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/orders/id/{id}": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Get order details by id",
+                "operationId": "dbd53c2d902813de19ed94e86b6b8b22",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Order ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Order details"
+                    },
+                    "404": {
+                        "description": "Order not found"
+                    },
+                    "403": {
+                        "description": "Not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/my-courses/status-count": {
             "get": {
                 "tags": [
