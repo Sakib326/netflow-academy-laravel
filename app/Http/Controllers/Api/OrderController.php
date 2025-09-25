@@ -416,4 +416,113 @@ class OrderController extends Controller
             'data' => $stats
         ]);
     }
+
+
+    /**
+     * @OA\Post(
+     *     path="/api/orders/{id}/approve",
+     *     summary="Approve a pending order (mark paid)",
+     *     tags={"Orders"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Order ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Order approved"),
+     *     @OA\Response(response=400, description="Invalid order status"),
+     *     @OA\Response(response=403, description="Not authorized"),
+     *     @OA\Response(response=404, description="Order not found")
+     * )
+     */
+    public function approveOrder(Request $request, $id)
+    {
+
+        $order = Order::find($id);
+        if (! $order) {
+            return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json(['success' => false, 'message' => 'Only pending orders can be approved'], 400);
+        }
+
+
+
+        try {
+            DB::beginTransaction();
+
+            // Use Eloquent save() so observers fire
+            $order->status = 'paid';
+            $order->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order marked as paid',
+                'order_id' => $order->id,
+                'status' => $order->status,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to approve order: '.$e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/orders/id/{id}",
+     *     summary="Get order details by id",
+     *     tags={"Orders"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Order ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(response=200, description="Order details"),
+     *     @OA\Response(response=404, description="Order not found"),
+     *     @OA\Response(response=403, description="Not authorized")
+     * )
+     */
+    public function getOrderById($id)
+    {
+
+        $order = Order::with(['course', 'enrollment.batch'])->find($id);
+        if (! $order) {
+            return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+        }
+
+        $orderData = [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'amount' => $order->amount,
+            'discount_amount' => $order->discount_amount,
+            'status' => $order->status,
+            'notes' => $order->notes,
+            'created_at' => $order->created_at,
+            'course' => $order->course ? [
+                'id' => $order->course->id,
+                'title' => $order->course->title,
+                'slug' => $order->course->slug,
+                'thumbnail' => $order->course->thumbnail ? asset('storage/' . $order->course->thumbnail) : null,
+                'price' => $order->course->price,
+                'discounted_price' => $order->course->discounted_price ?? $order->course->discound_price ?? null,
+            ] : null,
+            'enrollment' => $order->enrollment ? [
+                'id' => $order->enrollment->id,
+                'status' => $order->enrollment->status,
+                'enrolled_at' => $order->enrollment->created_at,
+                'batch_name' => $order->enrollment->batch->name ?? null,
+            ] : null,
+        ];
+
+        return response()->json(['success' => true, 'data' => $orderData]);
+    }
+
 }
