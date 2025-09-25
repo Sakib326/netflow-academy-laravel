@@ -7,7 +7,7 @@ use App\Http\Controllers\Api\CourseEnrollmentController;
 use App\Http\Controllers\Api\LessonModuleController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\DIscussionController;
-use App\Http\Controllers\Api\OrderController;                                                                                   
+use App\Http\Controllers\Api\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -32,6 +32,15 @@ Route::get('/courses/{slug}', [CourseController::class, 'show']);
 Route::get('/categories', [CourseController::class, 'categories']);
 Route::get('/instructors', [CourseController::class, 'instructors']);
 Route::get('/reviews', [CourseController::class, 'reviews']);
+
+// Approve (mark pending -> paid)
+Route::post('orders/{id}/approve', [OrderController::class, 'approveOrder'])
+    ->name('orders.approve');
+
+// Get order by numeric id
+Route::get('orders/id/{id}', [OrderController::class, 'getOrderById'])
+    ->name('orders.showById');
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
