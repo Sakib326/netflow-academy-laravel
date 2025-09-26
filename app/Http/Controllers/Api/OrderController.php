@@ -115,8 +115,8 @@ class OrderController extends Controller
             $order = Order::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
-                'amount' => $finalAmount,
-                'discount_amount' => $discountAmount,
+                'amount' => $course->price,
+                'discount_amount' => $course->discound_price,
                 'status' => 'pending',
                 'notes' => $request->input('notes')
             ]);
@@ -125,8 +125,8 @@ class OrderController extends Controller
                 'success' => true,
                 'message' => 'Order created successfully. Please wait for admin approval.',
                 'order_number' => $order->order_number,
-                'amount' => $finalAmount,
-                'discount_amount' => $discountAmount,
+                'amount' => $course->price,
+                'discount_amount' => $course->discound_price,
                 'status' => 'pending',
                 'course_title' => $course->title
             ], 201);
