@@ -493,10 +493,18 @@ class OrderController extends Controller
     public function getOrderById($id)
     {
 
-        $order = Order::with(['course', 'enrollment.batch'])->find($id);
+        $order = Order::with(['course', 'enrollment.batch', 'user'])->find($id);
         if (! $order) {
             return response()->json(['success' => false, 'message' => 'Order not found'], 404);
         }
+
+        $customer = $order->user ? [
+            'id' => $order->user->id,
+            'name' => $order->user->name,
+            'email' => $order->user->email,
+            'avatar' => $order->user->avatar ? asset('storage/' . $order->user->avatar) : null,
+            'created_at' => $order->user->created_at,
+        ] : null;
 
         $orderData = [
             'id' => $order->id,
@@ -520,6 +528,7 @@ class OrderController extends Controller
                 'enrolled_at' => $order->enrollment->created_at,
                 'batch_name' => $order->enrollment->batch->name ?? null,
             ] : null,
+            'customer' => $customer,
         ];
 
         return response()->json(['success' => true, 'data' => $orderData]);
