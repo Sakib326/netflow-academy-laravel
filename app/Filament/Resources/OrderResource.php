@@ -133,7 +133,7 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('order_number')
+                TextColumn::make('id')
                     ->label('Order #')
                     ->searchable()
                     ->sortable()
