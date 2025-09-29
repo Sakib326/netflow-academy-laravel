@@ -2216,6 +2216,72 @@
                     }
                 ]
             }
+        },
+        "/api/zoom/latest": {
+            "get": {
+                "tags": [
+                    "Zoom"
+                ],
+                "summary": "Get the latest created Zoom link",
+                "description": "Returns the most recently created Zoom meeting link",
+                "operationId": "522c7b1c15734fd7dadfd163babb4dba",
+                "responses": {
+                    "200": {
+                        "description": "Latest Zoom link retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "link": {
+                                                    "type": "string",
+                                                    "example": "https://zoom.us/j/123456789"
+                                                },
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time",
+                                                    "example": "2023-12-01T10:30:00Z"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No Zoom links found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No Zoom links available"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -3212,6 +3278,10 @@
         {
             "name": "User Courses",
             "description": "User Courses"
+        },
+        {
+            "name": "Zoom",
+            "description": "Zoom"
         }
     ]
 }

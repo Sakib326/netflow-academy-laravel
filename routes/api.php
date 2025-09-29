@@ -43,6 +43,9 @@ Route::get('orders/id/{id}', [OrderController::class, 'getOrderById'])
 
 
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('zoom/latest', [ZoomController::class, 'getLatest'])->name('zoom.latest');
+
     Route::get('/my-courses', [UserCourseManagementController::class, 'myCourses']);
     Route::get('/my-courses/status-count', [UserCourseManagementController::class, 'myCoursesStatusCount']);
     Route::post('/enroll/{slug}', [CourseEnrollmentController::class, 'makeEnrollment']);
