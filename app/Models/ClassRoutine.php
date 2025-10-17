@@ -10,8 +10,6 @@ class ClassRoutine extends Model
         'course_id',
         'batch_id',
         'days',
-        'start_time',
-        'end_time',
         'off_dates',
     ];
 

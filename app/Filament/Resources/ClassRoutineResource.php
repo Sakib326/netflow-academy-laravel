@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Get;
-use Filament\Forms\Set;
 
 class ClassRoutineResource extends Resource
 {
@@ -30,7 +29,7 @@ class ClassRoutineResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Routine Details')
+                Section::make()
                     ->schema([
                         Grid::make(2)
                             ->schema([
@@ -50,47 +49,55 @@ class ClassRoutineResource extends Resource
                                     )
                                     ->searchable()
                                     ->required()
-                                    ->reactive()
-                                    ->helperText('Select course first for filtered batches'),
+                                    ->reactive(),
                             ]),
 
-                        Forms\Components\CheckboxList::make('days')
-                            ->label('Days of the Week')
-                            ->options([
-                                'Monday' => 'Monday',
-                                'Tuesday' => 'Tuesday',
-                                'Wednesday' => 'Wednesday',
-                                'Thursday' => 'Thursday',
-                                'Friday' => 'Friday',
-                                'Saturday' => 'Saturday',
-                                'Sunday' => 'Sunday',
-                            ])
-                            ->columns(4)
-                            ->required()
-                            ->helperText('Select all days when this class occurs.'),
-
-                        Grid::make(2)
+                        Forms\Components\Repeater::make('days')
+                            ->label('Weekly Schedule')
                             ->schema([
-                                Forms\Components\TimePicker::make('start_time')
-                                    ->label('Start Time')
-                                    ->required(),
-
-                                Forms\Components\TimePicker::make('end_time')
-                                    ->label('End Time')
-                                    ->required(),
-                            ]),
+                                Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\Select::make('day')
+                                            ->label('Day')
+                                            ->options([
+                                                'Monday' => 'Monday',
+                                                'Tuesday' => 'Tuesday',
+                                                'Wednesday' => 'Wednesday',
+                                                'Thursday' => 'Thursday',
+                                                'Friday' => 'Friday',
+                                                'Saturday' => 'Saturday',
+                                                'Sunday' => 'Sunday',
+                                            ])
+                                            ->required(),
+                                        Forms\Components\TimePicker::make('start_time')
+                                            ->label('Start')
+                                            ->required(),
+                                        Forms\Components\TimePicker::make('end_time')
+                                            ->label('End')
+                                            ->required(),
+                                    ]),
+                            ])
+                            ->addActionLabel('Add')
+                            ->columnSpanFull(),
 
                         Forms\Components\Repeater::make('off_dates')
                             ->label('Special Off Dates')
                             ->schema([
-                                Forms\Components\DatePicker::make('date')
-                                    ->label('Off Date')
-                                    ->required(),
+                                Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\DatePicker::make('date')
+                                            ->label('Date')
+                                            ->required(),
+                                        Forms\Components\TextInput::make('note')
+                                            ->label('Note')
+                                            ->maxLength(100)
+                                            ->placeholder('e.g. Eid'),
+                                    ]),
                             ])
-                            ->addActionLabel('Add Off Date')
-                            ->helperText('Add any special dates when class will not be held.')
+                            ->addActionLabel('Add')
                             ->columnSpanFull(),
-                    ]),
+                    ])
+                    ->columns(1),
             ]);
     }
 
@@ -109,29 +116,30 @@ class ClassRoutineResource extends Resource
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('days')
-                    ->label('Days')
-                    ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', $state) : $state)
-                    ->badge()
-                    ->color('info'),
-
-                Tables\Columns\TextColumn::make('start_time')
-                    ->label('Start')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('end_time')
-                    ->label('End')
-                    ->sortable(),
+                    ->label('Weekly')
+                    ->formatStateUsing(function ($state) {
+                        if (is_array($state) && count($state)) {
+                            return collect($state)
+                                ->map(
+                                    fn ($item) =>
+                                    ($item['day'] ?? '-') . ' (' . ($item['start_time'] ?? '-') . '-' . ($item['end_time'] ?? '-') . ')'
+                                )
+                                ->implode(', ');
+                        }
+                        return '-';
+                    })
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('off_dates')
                     ->label('Off Dates')
                     ->formatStateUsing(function ($state) {
                         if (is_array($state) && count($state)) {
-                            // Support both array of dates or array of ['date' => ...]
-                            $dates = [];
-                            foreach ($state as $item) {
-                                $dates[] = is_array($item) && isset($item['date']) ? $item['date'] : $item;
-                            }
-                            return implode(', ', $dates);
+                            return collect($state)
+                                ->map(
+                                    fn ($item) =>
+                                    ($item['date'] ?? '-') . (isset($item['note']) ? ' [' . $item['note'] . ']' : '')
+                                )
+                                ->implode(', ');
                         }
                         return '-';
                     })
@@ -152,23 +160,6 @@ class ClassRoutineResource extends Resource
                 Tables\Filters\SelectFilter::make('batch_id')
                     ->label('Batch')
                     ->options(Batch::pluck('name', 'id')),
-
-                Tables\Filters\SelectFilter::make('days')
-                    ->label('Day')
-                    ->options([
-                        'Monday' => 'Monday',
-                        'Tuesday' => 'Tuesday',
-                        'Wednesday' => 'Wednesday',
-                        'Thursday' => 'Thursday',
-                        'Friday' => 'Friday',
-                        'Saturday' => 'Saturday',
-                        'Sunday' => 'Sunday',
-                    ])
-                    ->query(function (Builder $query, array $data) {
-                        if (!empty($data['value'])) {
-                            $query->whereJsonContains('days', $data['value']);
-                        }
-                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -185,9 +176,7 @@ class ClassRoutineResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            // Add relation managers if needed
-        ];
+        return [];
     }
 
     public static function getPages(): array
