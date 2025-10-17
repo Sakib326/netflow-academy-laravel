@@ -399,7 +399,6 @@ class CertificateResource extends Resource
                     ->color('info')
                     ->url(fn (Certificate $record): string => asset($record->path))
                     ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
