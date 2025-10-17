@@ -15,8 +15,10 @@ class ExamResponseObserver
      */
     public function updated(ExamResponse $examResponse): void
     {
-        // Check if score was updated, is >= 60, and a certificate doesn't already exist
-        if ($examResponse->isDirty('score') && $examResponse->score >= 60 && !$examResponse->certificate) {
+        // Check if status changed to 'graded', score is >= 40%, and certificate doesn't exist
+        if ($examResponse->status === 'graded' &&
+            $examResponse->percentage >= 40 &&
+            !$examResponse->certificate) {
             $this->generateCertificate($examResponse);
         }
     }
@@ -35,6 +37,7 @@ class ExamResponseObserver
             'courseName' => $course->title,
             'issueDate' => now()->format('F j, Y'),
             'certificateCode' => $certificateCode,
+            'score' => $examResponse->percentage,
         ];
 
         // Generate PDF from a Blade view
