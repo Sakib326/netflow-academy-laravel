@@ -29,7 +29,15 @@ class ExamResponseObserver
         $course = $examResponse->exam->course;
         $certificateCode = 'CERT-' . $course->id . '-' . $user->id . '-' . Str::random(8);
         $fileName = Str::slug($user->name . '-' . $course->title . '-' . $certificateCode) . '.pdf';
-        $filePath = 'public/certificates/' . $fileName;
+
+        // Create directory if it doesn't exist
+        $publicPath = public_path('certificates');
+        if (!file_exists($publicPath)) {
+            mkdir($publicPath, 0755, true);
+        }
+
+        $filePath = 'certificates/' . $fileName;
+        $fullPath = public_path($filePath);
 
         // Data to pass to the certificate view
         $data = [
@@ -43,8 +51,8 @@ class ExamResponseObserver
         // Generate PDF from a Blade view
         $pdf = Pdf::loadView('certificates.template', $data)->setPaper('a4', 'landscape');
 
-        // Save the PDF to storage
-        Storage::put($filePath, $pdf->output());
+        // Save directly to public folder
+        file_put_contents($fullPath, $pdf->output());
 
         // Create the certificate record in the database
         Certificate::create([
