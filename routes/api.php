@@ -43,6 +43,10 @@ Route::get('orders/id/{id}', [OrderController::class, 'getOrderById'])
     ->name('orders.showById');
 
 
+Route::get('/coupons/check/{slug}', [CouponController::class, 'check']);
+
+
+
 Route::get('zoom/latest', [ZoomController::class, 'getLatest'])->name('zoom.latest');
 
 Route::middleware('auth:sanctum')->group(function () {
