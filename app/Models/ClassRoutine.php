@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class ClassRoutine extends Model
 {
@@ -26,5 +27,46 @@ class ClassRoutine extends Model
     public function batch()
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function isClassToday(): bool
+    {
+        $today = Carbon::now()->format('l');
+
+        foreach ($this->days as $day) {
+            if ($day['day'] === $today) {
+                return !$this->isOffToday();
+            }
+        }
+
+        return false;
+    }
+
+    public function isOffToday(): bool
+    {
+        $today = Carbon::now()->format('Y-m-d');
+
+        if ($this->off_dates) {
+            foreach ($this->off_dates as $offDate) {
+                if ($offDate['date'] === $today) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public function getTodayClassTime(): ?array
+    {
+        $today = Carbon::now()->format('l');
+
+        foreach ($this->days as $day) {
+            if ($day['day'] === $today) {
+                return $day;
+            }
+        }
+
+        return null;
     }
 }
