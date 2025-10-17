@@ -399,24 +399,6 @@ class CertificateResource extends Resource
                     ->color('info')
                     ->url(fn (Certificate $record): string => asset($record->path))
                     ->openUrlInNewTab(),
-
-                Action::make('regenerate')
-                    ->label('Regenerate')
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->action(function (Certificate $record) {
-                        // Trigger regeneration by updating exam response
-                        $record->examResponse->touch();
-
-                        \Filament\Notifications\Notification::make()
-                            ->title('Certificate Regenerated')
-                            ->body('The certificate has been regenerated successfully.')
-                            ->success()
-                            ->send();
-                    }),
-
-                // Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
