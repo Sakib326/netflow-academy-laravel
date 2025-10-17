@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Models\Course;
-use App\Models\Payment;
+use App\Models\Order;
 use App\Models\Enrollment;
-use App\Models\Batch;
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use OpenApi\Attributes as OA;
 
 class OrderController extends Controller
@@ -32,23 +30,14 @@ class OrderController extends Controller
      *     @OA\RequestBody(
      *         required=false,
      *         @OA\JsonContent(
-     *             @OA\Property(property="notes", type="string", example="Special request", description="Order notes")
+     *             @OA\Property(property="notes", type="string", example="Special request", description="Order notes"),
+     *             @OA\Property(property="coupon_code", type="string", example="SAVE20", description="Optional coupon code")
      *         )
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Order created successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Order created successfully"),
-     *             @OA\Property(property="order_number", type="string", example="ORD-ABC123"),
-     *             @OA\Property(property="amount", type="number", format="float", example=89.99),
-     *             @OA\Property(property="status", type="string", example="pending")
-     *         )
-     *     ),
-     *     @OA\Response(response=400, description="Already has pending order or already enrolled"),
-     *     @OA\Response(response=404, description="Course not found"),
-     *     @OA\Response(response=500, description="Server error")
+     *         description="Order created successfully"
+     *     )
      * )
      */
     public function createOrder(Request $request, $slug)
@@ -93,16 +82,16 @@ class OrderController extends Controller
             ], 400);
         }
 
-        // 4. Validate request (ONLY notes now)
+        // 4. Validate request
         $request->validate([
-            'notes' => 'nullable|string|max:500'
+            'notes' => 'nullable|string|max:500',
+            'coupon_code' => 'nullable|string|max:50'
         ]);
 
-        // 5. Calculate pricing from DB (SERVER-CONTROLLED)
-        $coursePrice = $course->getEffectivePrice(); // This handles price vs discounted_price logic
+        // 5. Calculate pricing from DB
+        $coursePrice = $course->getEffectivePrice();
         $discountAmount = 0;
 
-        // If course has a discounted price, calculate the discount
         if ($course->discound_price && $course->discound_price < $course->price) {
             $discountAmount = $course->price - $course->discound_price;
             $finalAmount = $course->discound_price;
@@ -110,16 +99,46 @@ class OrderController extends Controller
             $finalAmount = $course->price;
         }
 
+        // 6. Handle coupon validation and application
+        $coupon = null;
+        $couponDiscount = 0;
+        if ($request->filled('coupon_code')) {
+            $coupon = Coupon::where('code', strtoupper($request->coupon_code))->first();
+
+            if ($coupon && $coupon->isValidForCourse($course->id, $course->price)) {
+                $couponDiscount = $coupon->getDiscountAmount($course->price);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $coupon ? $coupon->getValidationMessage($course->price, $course->id) : 'Invalid coupon code'
+                ], 400);
+            }
+        }
+
         try {
-            // 6. Create order with DB-calculated prices
+            DB::beginTransaction();
+
+            // 7. Create order
             $order = Order::create([
                 'user_id' => $user->id,
                 'course_id' => $course->id,
                 'amount' => $course->price,
                 'discount_amount' => $course->discound_price,
+                'coupon_id' => $coupon ? $coupon->id : null,
+                'coupon_discount' => $couponDiscount,
                 'status' => 'pending',
                 'notes' => $request->input('notes')
             ]);
+
+            // 8. Mark coupon as used if applied
+            if ($coupon) {
+                $coupon->markAsUsed();
+            }
+
+            DB::commit();
+
+            // Calculate final amount with all discounts
+            $finalAmountWithCoupon = $order->getFinalAmount();
 
             return response()->json([
                 'success' => true,
@@ -127,11 +146,14 @@ class OrderController extends Controller
                 'order_number' => $order->order_number,
                 'amount' => $course->price,
                 'discount_amount' => $course->discound_price,
+                'coupon_discount' => $couponDiscount,
+                'final_amount' => $finalAmountWithCoupon,
                 'status' => 'pending',
                 'course_title' => $course->title
             ], 201);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create order: ' . $e->getMessage()
@@ -142,7 +164,7 @@ class OrderController extends Controller
     /**
      * @OA\Get(
      *     path="/api/orders/my-orders",
-     *     summary="Get current user's orders",
+     *     summary="Get user's orders",
      *     tags={"Orders"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -152,41 +174,9 @@ class OrderController extends Controller
      *         description="Filter by order status",
      *         @OA\Schema(type="string", enum={"pending", "paid", "cancelled"})
      *     ),
-     *     @OA\Parameter(
-     *         name="page",
-     *         in="query",
-     *         required=false,
-     *         description="Page number",
-     *         @OA\Schema(type="integer", example=1)
-     *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Orders retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="current_page", type="integer", example=1),
-     *                 @OA\Property(property="total", type="integer", example=5),
-     *                 @OA\Property(property="per_page", type="integer", example=10),
-     *                 @OA\Property(property="data", type="array",
-     *                     @OA\Items(
-     *                         @OA\Property(property="id", type="integer", example=1),
-     *                         @OA\Property(property="order_number", type="string", example="ORD-ABC123"),
-     *                         @OA\Property(property="amount", type="number", format="float", example=89.99),
-     *                         @OA\Property(property="discount_amount", type="number", format="float", example=10.00),
-     *                         @OA\Property(property="status", type="string", example="pending"),
-     *                         @OA\Property(property="notes", type="string", nullable=true),
-     *                         @OA\Property(property="created_at", type="string", format="date-time"),
-     *                         @OA\Property(property="course", type="object",
-     *                             @OA\Property(property="id", type="integer", example=1),
-     *                             @OA\Property(property="title", type="string", example="Web Development"),
-     *                             @OA\Property(property="slug", type="string", example="web-development"),
-     *                             @OA\Property(property="thumbnail", type="string", nullable=true)
-     *                         )
-     *                     )
-     *                 )
-     *             )
-     *         )
+     *         description="Orders retrieved successfully"
      *     )
      * )
      */
@@ -195,7 +185,7 @@ class OrderController extends Controller
         $user = Auth::user();
 
         $query = Order::where('user_id', $user->id)
-            ->with(['course:id,title,slug,thumbnail']);
+            ->with(['course:id,title,slug,thumbnail', 'coupon:id,code']);
 
         // Filter by status if provided
         if ($request->filled('status')) {
@@ -211,6 +201,9 @@ class OrderController extends Controller
                 'order_number' => $order->order_number,
                 'amount' => $order->amount,
                 'discount_amount' => $order->discount_amount,
+                'coupon_discount' => $order->coupon_discount,
+                'final_amount' => $order->getFinalAmount(),
+                'coupon_code' => $order->coupon ? $order->coupon->code : null,
                 'status' => $order->status,
                 'notes' => $order->notes,
                 'created_at' => $order->created_at,
@@ -232,7 +225,7 @@ class OrderController extends Controller
     /**
      * @OA\Get(
      *     path="/api/orders/{orderNumber}",
-     *     summary="Get specific order details",
+     *     summary="Get order details by order number",
      *     tags={"Orders"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -244,21 +237,8 @@ class OrderController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Order details retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="id", type="integer", example=1),
-     *                 @OA\Property(property="order_number", type="string", example="ORD-ABC123"),
-     *                 @OA\Property(property="amount", type="number", format="float", example=89.99),
-     *                 @OA\Property(property="status", type="string", example="pending"),
-     *                 @OA\Property(property="course", type="object"),
-     *                 @OA\Property(property="enrollment", type="object", nullable=true)
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(response=404, description="Order not found"),
-     *     @OA\Response(response=403, description="Not authorized to view this order")
+     *         description="Order details retrieved successfully"
+     *     )
      * )
      */
     public function getOrderDetails($orderNumber)
@@ -267,7 +247,7 @@ class OrderController extends Controller
 
         $order = Order::where('order_number', $orderNumber)
             ->where('user_id', $user->id)
-            ->with(['course', 'enrollment.batch'])
+            ->with(['course', 'enrollment.batch', 'coupon'])
             ->first();
 
         if (!$order) {
@@ -282,6 +262,9 @@ class OrderController extends Controller
             'order_number' => $order->order_number,
             'amount' => $order->amount,
             'discount_amount' => $order->discount_amount,
+            'coupon_discount' => $order->coupon_discount,
+            'final_amount' => $order->getFinalAmount(),
+            'coupon_code' => $order->coupon ? $order->coupon->code : null,
             'status' => $order->status,
             'notes' => $order->notes,
             'created_at' => $order->created_at,
@@ -315,7 +298,7 @@ class OrderController extends Controller
     /**
      * @OA\Post(
      *     path="/api/orders/{orderNumber}/cancel",
-     *     summary="Cancel a pending order",
+     *     summary="Cancel an order",
      *     tags={"Orders"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -327,14 +310,8 @@ class OrderController extends Controller
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Order cancelled successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="message", type="string", example="Order cancelled successfully")
-     *         )
-     *     ),
-     *     @OA\Response(response=400, description="Cannot cancel this order"),
-     *     @OA\Response(response=404, description="Order not found")
+     *         description="Order cancelled successfully"
+     *     )
      * )
      */
     public function cancelOrder($orderNumber)
@@ -343,24 +320,30 @@ class OrderController extends Controller
 
         $order = Order::where('order_number', $orderNumber)
             ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->with('coupon')
             ->first();
 
         if (!$order) {
             return response()->json([
                 'success' => false,
-                'message' => 'Order not found'
+                'message' => 'Order not found or cannot be cancelled'
             ], 404);
         }
 
-        if ($order->status !== 'pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only pending orders can be cancelled'
-            ], 400);
-        }
-
         try {
-            $order->update(['status' => 'cancelled']);
+            DB::beginTransaction();
+
+            // Update order status
+            $order->status = 'cancelled';
+            $order->save();
+
+            // Decrease coupon usage count if coupon was used
+            if ($order->coupon) {
+                $order->coupon->decrement('used_count');
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -368,6 +351,7 @@ class OrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to cancel order: ' . $e->getMessage()
@@ -378,23 +362,12 @@ class OrderController extends Controller
     /**
      * @OA\Get(
      *     path="/api/orders/stats",
-     *     summary="Get user's order statistics",
+     *     summary="Get order statistics for the authenticated user",
      *     tags={"Orders"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
-     *         description="Order statistics retrieved successfully",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="success", type="boolean", example=true),
-     *             @OA\Property(property="data", type="object",
-     *                 @OA\Property(property="total_orders", type="integer", example=5),
-     *                 @OA\Property(property="pending_orders", type="integer", example=1),
-     *                 @OA\Property(property="paid_orders", type="integer", example=3),
-     *                 @OA\Property(property="cancelled_orders", type="integer", example=1),
-     *                 @OA\Property(property="total_spent", type="number", format="float", example=299.97),
-     *                 @OA\Property(property="active_enrollments", type="integer", example=3)
-     *             )
-     *         )
+     *         description="Order statistics retrieved successfully"
      *     )
      * )
      */
@@ -408,7 +381,8 @@ class OrderController extends Controller
             'paid_orders' => Order::where('user_id', $user->id)->where('status', 'paid')->count(),
             'cancelled_orders' => Order::where('user_id', $user->id)->where('status', 'cancelled')->count(),
             'total_spent' => Order::where('user_id', $user->id)->where('status', 'paid')->sum('amount'),
-            'active_enrollments' => Enrollment::where('user_id', $user->id)->where('status', 'active')->count(),
+            'total_savings' => Order::where('user_id', $user->id)->where('status', 'paid')->sum('discount_amount'),
+            'coupon_savings' => Order::where('user_id', $user->id)->where('status', 'paid')->sum('coupon_discount'),
         ];
 
         return response()->json([
@@ -417,13 +391,11 @@ class OrderController extends Controller
         ]);
     }
 
-
     /**
      * @OA\Post(
      *     path="/api/orders/{id}/approve",
-     *     summary="Approve a pending order (mark paid)",
+     *     summary="Approve an order (Admin only)",
      *     tags={"Orders"},
-     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -431,53 +403,69 @@ class OrderController extends Controller
      *         description="Order ID",
      *         @OA\Schema(type="integer")
      *     ),
-     *     @OA\Response(response=200, description="Order approved"),
-     *     @OA\Response(response=400, description="Invalid order status"),
-     *     @OA\Response(response=403, description="Not authorized"),
-     *     @OA\Response(response=404, description="Order not found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order approved successfully"
+     *     )
      * )
      */
-    public function approveOrder(Request $request, $id)
+    public function approveOrder($id)
     {
+        $order = Order::with(['user', 'course'])->find($id);
 
-        $order = Order::find($id);
-        if (! $order) {
-            return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
         }
 
         if ($order->status !== 'pending') {
-            return response()->json(['success' => false, 'message' => 'Only pending orders can be approved'], 400);
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending orders can be approved'
+            ], 400);
         }
-
-
 
         try {
             DB::beginTransaction();
 
-            // Use Eloquent save() so observers fire
+            // Update order status
             $order->status = 'paid';
             $order->save();
+
+            // Create enrollment if course has batches
+            $batch = $order->course->batches()->where('status', 'active')->first();
+            if ($batch) {
+                Enrollment::create([
+                    'user_id' => $order->user_id,
+                    'batch_id' => $batch->id,
+                    'order_id' => $order->id,
+                    'status' => 'active'
+                ]);
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order marked as paid',
-                'order_id' => $order->id,
-                'status' => $order->status,
+                'message' => 'Order approved successfully'
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Failed to approve order: '.$e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to approve order: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     /**
      * @OA\Get(
      *     path="/api/orders/id/{id}",
-     *     summary="Get order details by id",
+     *     summary="Get order by ID (Admin)",
      *     tags={"Orders"},
-     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -485,17 +473,21 @@ class OrderController extends Controller
      *         description="Order ID",
      *         @OA\Schema(type="integer")
      *     ),
-     *     @OA\Response(response=200, description="Order details"),
-     *     @OA\Response(response=404, description="Order not found"),
-     *     @OA\Response(response=403, description="Not authorized")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Order details retrieved successfully"
+     *     )
      * )
      */
     public function getOrderById($id)
     {
+        $order = Order::with(['course', 'enrollment.batch', 'user', 'coupon'])->find($id);
 
-        $order = Order::with(['course', 'enrollment.batch', 'user'])->find($id);
-        if (! $order) {
-            return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
         }
 
         $customer = $order->user ? [
@@ -511,6 +503,9 @@ class OrderController extends Controller
             'order_number' => $order->order_number,
             'amount' => $order->amount,
             'discount_amount' => $order->discount_amount,
+            'coupon_discount' => $order->coupon_discount,
+            'final_amount' => $order->getFinalAmount(),
+            'coupon_code' => $order->coupon ? $order->coupon->code : null,
             'status' => $order->status,
             'notes' => $order->notes,
             'created_at' => $order->created_at,
@@ -531,7 +526,9 @@ class OrderController extends Controller
             'customer' => $customer,
         ];
 
-        return response()->json(['success' => true, 'data' => $orderData]);
+        return response()->json([
+            'success' => true,
+            'data' => $orderData
+        ]);
     }
-
 }
