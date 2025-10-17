@@ -196,7 +196,7 @@ class CertificateResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\ViewAction::make(),
+                // Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -240,7 +240,7 @@ class CertificateResource extends Resource
         return [
             'index' => Pages\ListCertificates::route('/'),
             'create' => Pages\CreateCertificate::route('/create'),
-            'view' => Pages\ViewCertificate::route('/{record}'),
+            // 'view' => Pages\ViewCertificate::route('/{record}'),
             'edit' => Pages\EditCertificate::route('/{record}/edit'),
         ];
     }
