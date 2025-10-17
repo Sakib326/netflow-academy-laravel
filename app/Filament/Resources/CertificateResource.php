@@ -108,18 +108,37 @@ class CertificateResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+
             ->filters([
+                // Course Filter
                 Tables\Filters\SelectFilter::make('course_id')
                     ->label('Course')
                     ->relationship('course', 'title')
-                    ->searchable(),
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
 
-                Tables\Filters\Filter::make('issue_date')
+                // Student Filter
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Student')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
+
+                // Issue Date Range Filter
+                Tables\Filters\Filter::make('issue_date_range')
+                    ->label('Issue Date Range')
                     ->form([
-                        Forms\Components\DatePicker::make('issued_from')
-                            ->label('Issued From'),
-                        Forms\Components\DatePicker::make('issued_until')
-                            ->label('Issued Until'),
+                        Forms\Components\Grid::make(2)
+                            ->schema([
+                                Forms\Components\DatePicker::make('issued_from')
+                                    ->label('From Date')
+                                    ->placeholder('Select start date'),
+                                Forms\Components\DatePicker::make('issued_until')
+                                    ->label('To Date')
+                                    ->placeholder('Select end date'),
+                            ])
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -131,25 +150,226 @@ class CertificateResource extends Resource
                                 $data['issued_until'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('issue_date', '<=', $date),
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['issued_from'] ?? null) {
+                            $indicators['issued_from'] = 'From: ' . \Carbon\Carbon::parse($data['issued_from'])->toFormattedDateString();
+                        }
+                        if ($data['issued_until'] ?? null) {
+                            $indicators['issued_until'] = 'Until: ' . \Carbon\Carbon::parse($data['issued_until'])->toFormattedDateString();
+                        }
+                        return $indicators;
                     }),
 
+                // Score Range Filter
                 Tables\Filters\Filter::make('score_range')
                     ->label('Score Range')
                     ->form([
-                        Forms\Components\Select::make('score_filter')
-                            ->options([
-                                '90-100' => '90-100% (Excellent)',
-                                '80-89' => '80-89% (Very Good)',
-                                '70-79' => '70-79% (Good)',
-                                '60-69' => '60-69% (Satisfactory)',
-                                '40-59' => '40-59% (Pass)',
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\Select::make('score_filter')
+                                    ->label('Grade Category')
+                                    ->options([
+                                        '90-100' => 'A+ (90-100%)',
+                                        '80-89' => 'A (80-89%)',
+                                        '70-79' => 'B (70-79%)',
+                                        '60-69' => 'C (60-69%)',
+                                        '50-59' => 'D (50-59%)',
+                                        '40-49' => 'E (40-49%)',
+                                    ])
+                                    ->placeholder('Select grade range'),
+                                Forms\Components\TextInput::make('min_score')
+                                    ->label('Min Score (%)')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->placeholder('0'),
+                                Forms\Components\TextInput::make('max_score')
+                                    ->label('Max Score (%)')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->placeholder('100'),
                             ])
                     ])
                     ->query(function (Builder $query, array $data): Builder {
-                        return $query->when($data['score_filter'], function ($query, $range) {
-                            [$min, $max] = explode('-', $range);
-                            return $query->whereHas('examResponse', function ($q) use ($min, $max) {
-                                $q->whereBetween('percentage', [$min, $max]);
+                        return $query
+                            ->when($data['score_filter'], function ($query, $range) {
+                                [$min, $max] = explode('-', $range);
+                                return $query->whereHas('examResponse', function ($q) use ($min, $max) {
+                                    $q->whereBetween('percentage', [$min, $max]);
+                                });
+                            })
+                            ->when($data['min_score'], function ($query, $minScore) {
+                                return $query->whereHas('examResponse', function ($q) use ($minScore) {
+                                    $q->where('percentage', '>=', $minScore);
+                                });
+                            })
+                            ->when($data['max_score'], function ($query, $maxScore) {
+                                return $query->whereHas('examResponse', function ($q) use ($maxScore) {
+                                    $q->where('percentage', '<=', $maxScore);
+                                });
+                            });
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['score_filter'] ?? null) {
+                            $indicators['score_filter'] = 'Grade: ' . $data['score_filter'];
+                        }
+                        if ($data['min_score'] ?? null) {
+                            $indicators['min_score'] = 'Min: ' . $data['min_score'] . '%';
+                        }
+                        if ($data['max_score'] ?? null) {
+                            $indicators['max_score'] = 'Max: ' . $data['max_score'] . '%';
+                        }
+                        return $indicators;
+                    }),
+
+                // Course Category Filter
+                Tables\Filters\SelectFilter::make('course_category')
+                    ->label('Course Category')
+                    ->options(function () {
+                        return \App\Models\CourseCategory::pluck('name', 'id');
+                    })
+                    ->query(function (Builder $query, $state) {
+                        if ($state['value']) {
+                            $query->whereHas('course.category', function ($q) use ($state) {
+                                $q->where('id', $state['value']);
+                            });
+                        }
+                    }),
+
+                // Certificate Status Filter
+                Tables\Filters\Filter::make('certificate_status')
+                    ->label('Certificate Status')
+                    ->form([
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'exists' => 'PDF File Exists',
+                                'missing' => 'PDF File Missing',
+                            ])
+                            ->placeholder('Select status')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when($data['status'], function ($query, $status) {
+                            $certificates = \App\Models\Certificate::all();
+                            if ($status === 'exists') {
+                                $existingIds = $certificates->filter(function ($cert) {
+                                    return file_exists(public_path($cert->path));
+                                })->pluck('id');
+                                return $query->whereIn('id', $existingIds);
+                            } elseif ($status === 'missing') {
+                                $missingIds = $certificates->filter(function ($cert) {
+                                    return !file_exists(public_path($cert->path));
+                                })->pluck('id');
+                                return $query->whereIn('id', $missingIds);
+                            }
+                        });
+                    }),
+
+                // Recent Certificates Filter
+                Tables\Filters\Filter::make('recent')
+                    ->label('Recent Certificates')
+                    ->form([
+                        Forms\Components\Select::make('period')
+                            ->options([
+                                'today' => 'Today',
+                                'yesterday' => 'Yesterday',
+                                'this_week' => 'This Week',
+                                'last_week' => 'Last Week',
+                                'this_month' => 'This Month',
+                                'last_month' => 'Last Month',
+                                'this_year' => 'This Year',
+                            ])
+                            ->placeholder('Select time period')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when($data['period'], function ($query, $period) {
+                            return match($period) {
+                                'today' => $query->whereDate('created_at', today()),
+                                'yesterday' => $query->whereDate('created_at', yesterday()),
+                                'this_week' => $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]),
+                                'last_week' => $query->whereBetween('created_at', [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()]),
+                                'this_month' => $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year),
+                                'last_month' => $query->whereMonth('created_at', now()->subMonth()->month)->whereYear('created_at', now()->subMonth()->year),
+                                'this_year' => $query->whereYear('created_at', now()->year),
+                                default => $query,
+                            };
+                        });
+                    }),
+
+                // Certificate Code Pattern Filter
+                Tables\Filters\Filter::make('certificate_pattern')
+                    ->label('Certificate Code Pattern')
+                    ->form([
+                        Forms\Components\TextInput::make('code_contains')
+                            ->label('Code Contains')
+                            ->placeholder('Enter text to search in certificate code'),
+                        Forms\Components\Select::make('code_prefix')
+                            ->label('Code Prefix')
+                            ->options([
+                                'CERT-' => 'Standard (CERT-)',
+                                'TEST-' => 'Test Certificates',
+                                'DEMO-' => 'Demo Certificates',
+                            ])
+                            ->placeholder('Select prefix pattern')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['code_contains'], function ($query, $text) {
+                                return $query->where('certificate_code', 'like', "%{$text}%");
+                            })
+                            ->when($data['code_prefix'], function ($query, $prefix) {
+                                return $query->where('certificate_code', 'like', "{$prefix}%");
+                            });
+                    }),
+
+                // Batch Filter (if certificates are linked to batches through enrollments)
+                Tables\Filters\SelectFilter::make('batch')
+                    ->label('Batch')
+                    ->options(function () {
+                        return \App\Models\Batch::with('course')->get()
+                            ->mapWithKeys(function ($batch) {
+                                return [$batch->id => $batch->course->title . ' - ' . $batch->name];
+                            });
+                    })
+                    ->query(function (Builder $query, $state) {
+                        if ($state['value']) {
+                            $query->whereHas('user.enrollments', function ($q) use ($state) {
+                                $q->where('batch_id', $state['value']);
+                            });
+                        }
+                    }),
+
+                // Performance Filter
+                Tables\Filters\Filter::make('performance')
+                    ->label('Performance Level')
+                    ->form([
+                        Forms\Components\CheckboxList::make('levels')
+                            ->options([
+                                'excellent' => 'Excellent (90%+)',
+                                'very_good' => 'Very Good (80-89%)',
+                                'good' => 'Good (70-79%)',
+                                'satisfactory' => 'Satisfactory (60-69%)',
+                                'pass' => 'Pass (40-59%)',
+                            ])
+                            ->columns(2)
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when($data['levels'], function ($query, $levels) {
+                            return $query->whereHas('examResponse', function ($q) use ($levels) {
+                                $q->where(function ($subQuery) use ($levels) {
+                                    foreach ($levels as $level) {
+                                        match($level) {
+                                            'excellent' => $subQuery->orWhere('percentage', '>=', 90),
+                                            'very_good' => $subQuery->orWhereBetween('percentage', [80, 89]),
+                                            'good' => $subQuery->orWhereBetween('percentage', [70, 79]),
+                                            'satisfactory' => $subQuery->orWhereBetween('percentage', [60, 69]),
+                                            'pass' => $subQuery->orWhereBetween('percentage', [40, 59]),
+                                        };
+                                    }
+                                });
                             });
                         });
                     }),
