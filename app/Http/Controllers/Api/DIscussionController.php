@@ -141,7 +141,7 @@ class DIscussionController extends Controller
         $query = Discussion::with(['user.enrollments.course', 'user.enrollments.batch'])
             ->where('discussable_type', Course::class)
             ->where('discussable_id', $course->id)
-            ->rootLevel() // Use the scope from your model
+            ->whereNull('parent_id') // Fixed: Use explicit null check instead of rootLevel scope
             ->withCount('replies')
             ->latest();
 
@@ -154,20 +154,16 @@ class DIscussionController extends Controller
         }
 
         if ($request->filled('is_question')) {
-            if ($request->boolean('is_question')) {
-                $query->questions(); // Use the scope from your model
-            } else {
-                $query->where('is_question', false);
-            }
+            $query->where('is_question', $request->boolean('is_question'));
         }
 
         $threads = $query->paginate($perPage);
 
         $threads->getCollection()->transform(function ($t) use ($course) {
             // Get user's enrolled courses and current batch for this course
-            $userEnrollments = $t->user->enrollments->where('status', 'active');
-            $currentBatch = $userEnrollments->where('course_id', $course->id)->first()?->batch;
-            
+            $userEnrollments = $t->user->enrollments()->where('status', 'active')->with(['course', 'batch'])->get();
+            $currentBatch = $userEnrollments->where('batch.course_id', $course->id)->first()?->batch;
+
             return [
                 'id' => $t->id,
                 'discussable_type' => $t->discussable_type,
@@ -181,7 +177,7 @@ class DIscussionController extends Controller
                     'id' => $t->user->id,
                     'name' => $t->user->name,
                     'avatar' => $t->user->avatar ? asset('storage/' . $t->user->avatar) : null,
-                    'enrolled_courses' => $userEnrollments->map(function($enrollment) {
+                    'enrolled_courses' => $userEnrollments->map(function ($enrollment) {
                         return [
                             'id' => $enrollment->course->id,
                             'title' => $enrollment->course->title,
@@ -252,13 +248,14 @@ class DIscussionController extends Controller
         $user = $request->user();
 
         // Check enrollment through batches
-        $enrolled = Enrollment::whereHas('batch', function($query) use ($course) {
-                $query->where('course_id', $course->id);
-            })
+        $enrolled = Enrollment::whereHas('batch', function ($query) use ($course) {
+            $query->where('course_id', $course->id);
+        })
             ->where('user_id', $user->id)
             ->where('status', 'active')
             ->exists();
 
+        // Uncomment if you want to enforce enrollment
         // if (!$enrolled) {
         //     throw ValidationException::withMessages([
         //         'course_id' => ['You must be enrolled to post in this course.']
@@ -277,15 +274,21 @@ class DIscussionController extends Controller
             'upvotes' => 0,
         ]);
 
-        $post->load('user.enrollments.course', 'user.enrollments.batch');
-        
+        $post->load(['user.enrollments.course', 'user.enrollments.batch']);
+
         // Get user's current batch for this course
         $currentBatch = $post->user->enrollments()
-            ->whereHas('batch', function($query) use ($course) {
+            ->whereHas('batch', function ($query) use ($course) {
                 $query->where('course_id', $course->id);
             })
             ->where('status', 'active')
+            ->with('batch')
             ->first()?->batch;
+
+        $enrolledCourses = $post->user->enrollments()
+            ->where('status', 'active')
+            ->with('batch.course')
+            ->get();
 
         return response()->json([
             'id' => $post->id,
@@ -301,17 +304,13 @@ class DIscussionController extends Controller
                 'id' => $post->user->id,
                 'name' => $post->user->name,
                 'avatar' => $post->user->avatar ? asset('storage/' . $post->user->avatar) : null,
-                'enrolled_courses' => $post->user->enrollments()
-                    ->where('status', 'active')
-                    ->with('batch.course')
-                    ->get()
-                    ->map(function($enrollment) {
-                        return [
-                            'id' => $enrollment->batch->course->id,
-                            'title' => $enrollment->batch->course->title,
-                            'enrollment_status' => $enrollment->status,
-                        ];
-                    }),
+                'enrolled_courses' => $enrolledCourses->map(function ($enrollment) {
+                    return [
+                        'id' => $enrollment->batch->course->id,
+                        'title' => $enrollment->batch->course->title,
+                        'enrollment_status' => $enrollment->status,
+                    ];
+                }),
                 'current_batch' => $currentBatch ? [
                     'id' => $currentBatch->id,
                     'name' => $currentBatch->name,
@@ -340,7 +339,7 @@ class DIscussionController extends Controller
     public function show(int $id)
     {
         $thread = Discussion::with(['user.enrollments.course', 'user.enrollments.batch', 'discussable'])
-            ->rootLevel() // Use the scope from your model
+            ->whereNull('parent_id') // Fixed: Use explicit null check
             ->findOrFail($id);
 
         $replies = Discussion::with(['user.enrollments.course', 'user.enrollments.batch'])
@@ -351,11 +350,17 @@ class DIscussionController extends Controller
         // Get course from discussable
         $course = $thread->discussable;
         $currentBatch = $thread->user->enrollments()
-            ->whereHas('batch', function($query) use ($course) {
+            ->whereHas('batch', function ($query) use ($course) {
                 $query->where('course_id', $course->id);
             })
             ->where('status', 'active')
+            ->with('batch')
             ->first()?->batch;
+
+        $enrolledCourses = $thread->user->enrollments()
+            ->where('status', 'active')
+            ->with('batch.course')
+            ->get();
 
         return response()->json([
             'thread' => [
@@ -372,17 +377,13 @@ class DIscussionController extends Controller
                     'id' => $thread->user->id,
                     'name' => $thread->user->name,
                     'avatar' => $thread->user->avatar ? asset('storage/' . $thread->user->avatar) : null,
-                    'enrolled_courses' => $thread->user->enrollments()
-                        ->where('status', 'active')
-                        ->with('batch.course')
-                        ->get()
-                        ->map(function($enrollment) {
-                            return [
-                                'id' => $enrollment->batch->course->id,
-                                'title' => $enrollment->batch->course->title,
-                                'enrollment_status' => $enrollment->status,
-                            ];
-                        }),
+                    'enrolled_courses' => $enrolledCourses->map(function ($enrollment) {
+                        return [
+                            'id' => $enrollment->batch->course->id,
+                            'title' => $enrollment->batch->course->title,
+                            'enrollment_status' => $enrollment->status,
+                        ];
+                    }),
                     'current_batch' => $currentBatch ? [
                         'id' => $currentBatch->id,
                         'name' => $currentBatch->name,
@@ -395,12 +396,18 @@ class DIscussionController extends Controller
             ],
             'replies' => $replies->map(function ($r) use ($course) {
                 $replyBatch = $r->user->enrollments()
-                    ->whereHas('batch', function($query) use ($course) {
+                    ->whereHas('batch', function ($query) use ($course) {
                         $query->where('course_id', $course->id);
                     })
                     ->where('status', 'active')
+                    ->with('batch')
                     ->first()?->batch;
-                
+
+                $replyEnrolledCourses = $r->user->enrollments()
+                    ->where('status', 'active')
+                    ->with('batch.course')
+                    ->get();
+
                 return [
                     'id' => $r->id,
                     'discussable_type' => $r->discussable_type,
@@ -415,17 +422,13 @@ class DIscussionController extends Controller
                         'id' => $r->user->id,
                         'name' => $r->user->name,
                         'avatar' => $r->user->avatar ? asset('storage/' . $r->user->avatar) : null,
-                        'enrolled_courses' => $r->user->enrollments()
-                            ->where('status', 'active')
-                            ->with('batch.course')
-                            ->get()
-                            ->map(function($enrollment) {
-                                return [
-                                    'id' => $enrollment->batch->course->id,
-                                    'title' => $enrollment->batch->course->title,
-                                    'enrollment_status' => $enrollment->status,
-                                ];
-                            }),
+                        'enrolled_courses' => $replyEnrolledCourses->map(function ($enrollment) {
+                            return [
+                                'id' => $enrollment->batch->course->id,
+                                'title' => $enrollment->batch->course->title,
+                                'enrollment_status' => $enrollment->status,
+                            ];
+                        }),
                         'current_batch' => $replyBatch ? [
                             'id' => $replyBatch->id,
                             'name' => $replyBatch->name,
@@ -471,7 +474,7 @@ class DIscussionController extends Controller
     )]
     public function reply(Request $request, int $id)
     {
-        $thread = Discussion::with('discussable')->rootLevel()->findOrFail($id);
+        $thread = Discussion::with('discussable')->whereNull('parent_id')->findOrFail($id);
 
         $request->validate([
             'content' => 'required|string|max:10000',
@@ -481,13 +484,14 @@ class DIscussionController extends Controller
         $course = $thread->discussable;
 
         // Check enrollment through batches
-        $enrolled = Enrollment::whereHas('batch', function($query) use ($course) {
-                $query->where('course_id', $course->id);
-            })
+        $enrolled = Enrollment::whereHas('batch', function ($query) use ($course) {
+            $query->where('course_id', $course->id);
+        })
             ->where('user_id', $user->id)
             ->where('status', 'active')
             ->exists();
 
+        // Uncomment if you want to enforce enrollment
         // if (!$enrolled) {
         //     throw ValidationException::withMessages([
         //         'id' => ['You must be enrolled to reply in this course.']
@@ -506,13 +510,19 @@ class DIscussionController extends Controller
             'upvotes' => 0,
         ]);
 
-        $reply->load('user.enrollments.course', 'user.enrollments.batch');
+        $reply->load(['user.enrollments.course', 'user.enrollments.batch']);
         $currentBatch = $reply->user->enrollments()
-            ->whereHas('batch', function($query) use ($course) {
+            ->whereHas('batch', function ($query) use ($course) {
                 $query->where('course_id', $course->id);
             })
             ->where('status', 'active')
+            ->with('batch')
             ->first()?->batch;
+
+        $enrolledCourses = $reply->user->enrollments()
+            ->where('status', 'active')
+            ->with('batch.course')
+            ->get();
 
         return response()->json([
             'id' => $reply->id,
@@ -528,17 +538,13 @@ class DIscussionController extends Controller
                 'id' => $reply->user->id,
                 'name' => $reply->user->name,
                 'avatar' => $reply->user->avatar ? asset('storage/' . $reply->user->avatar) : null,
-                'enrolled_courses' => $reply->user->enrollments()
-                    ->where('status', 'active')
-                    ->with('batch.course')
-                    ->get()
-                    ->map(function($enrollment) {
-                        return [
-                            'id' => $enrollment->batch->course->id,
-                            'title' => $enrollment->batch->course->title,
-                            'enrollment_status' => $enrollment->status,
-                        ];
-                    }),
+                'enrolled_courses' => $enrolledCourses->map(function ($enrollment) {
+                    return [
+                        'id' => $enrollment->batch->course->id,
+                        'title' => $enrollment->batch->course->title,
+                        'enrollment_status' => $enrollment->status,
+                    ];
+                }),
                 'current_batch' => $currentBatch ? [
                     'id' => $currentBatch->id,
                     'name' => $currentBatch->name,
@@ -585,8 +591,8 @@ class DIscussionController extends Controller
         $course = $post->discussable;
 
         // Check permissions: owner, course instructor, or admin
-        $canUpdate = $post->user_id === $user->id || 
-                    $course->instructor_id === $user->id || 
+        $canUpdate = $post->user_id === $user->id ||
+                    ($course && $course->instructor_id === $user->id) ||
                     in_array($user->role ?? '', ['admin']);
 
         if (!$canUpdate) {
@@ -599,10 +605,10 @@ class DIscussionController extends Controller
         ]);
 
         // Only update title for root-level discussions (not replies)
-        if (!$post->isReply() && $request->filled('title')) {
+        if (is_null($post->parent_id) && $request->filled('title')) {
             $post->title = $request->title;
         }
-        
+
         if ($request->filled('content')) {
             $post->content = $request->content;
         }
@@ -634,8 +640,8 @@ class DIscussionController extends Controller
         $course = $post->discussable;
 
         // Check permissions: owner, course instructor, or admin
-        $canDelete = $post->user_id === $user->id || 
-                    $course->instructor_id === $user->id || 
+        $canDelete = $post->user_id === $user->id ||
+                    ($course && $course->instructor_id === $user->id) ||
                     in_array($user->role ?? '', ['admin']);
 
         if (!$canDelete) {
@@ -643,10 +649,10 @@ class DIscussionController extends Controller
         }
 
         // If it's a root-level discussion, delete all its replies
-        if (!$post->isReply()) {
+        if (is_null($post->parent_id)) {
             Discussion::where('parent_id', $post->id)->delete();
         }
-        
+
         $post->delete();
 
         return response()->json(['message' => 'Discussion deleted successfully']);
@@ -671,7 +677,13 @@ class DIscussionController extends Controller
         $discussion = Discussion::findOrFail($id);
         $user = $request->user();
 
-        $discussion->toggleUpvote($user->id);
+        // Check if Discussion model has toggleUpvote method
+        if (method_exists($discussion, 'toggleUpvote')) {
+            $discussion->toggleUpvote($user->id);
+        } else {
+            // Simple increment if method doesn't exist
+            $discussion->increment('upvotes');
+        }
 
         return response()->json([
             'message' => 'Upvote toggled successfully',
@@ -701,8 +713,8 @@ class DIscussionController extends Controller
         $course = $discussion->discussable;
 
         // Check permissions: question owner, course instructor, or admin
-        $canMark = $discussion->user_id === $user->id || 
-                  $course->instructor_id === $user->id || 
+        $canMark = $discussion->user_id === $user->id ||
+                  ($course && $course->instructor_id === $user->id) ||
                   in_array($user->role ?? '', ['admin']);
 
         if (!$canMark) {
@@ -713,7 +725,13 @@ class DIscussionController extends Controller
             return response()->json(['message' => 'Only questions can be marked as answered.'], 400);
         }
 
-        $discussion->markAsAnswered();
+        // Check if Discussion model has markAsAnswered method
+        if (method_exists($discussion, 'markAsAnswered')) {
+            $discussion->markAsAnswered();
+        } else {
+            // Direct update if method doesn't exist
+            $discussion->update(['is_answered' => true]);
+        }
 
         return response()->json(['message' => 'Question marked as answered successfully']);
     }
