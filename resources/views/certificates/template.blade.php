@@ -6,31 +6,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
-
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Lato:wght@300;400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 0;
+            font-family: 'Lato', Arial, sans-serif;
+            background: white;
         }
 
         .certificate-container {
             width: 100%;
             text-align: center;
+            page-break-inside: avoid;
         }
 
         .certificate-inner {
             display: inline-block;
             width: 800px;
             text-align: center;
-            margin: auto;
+            margin: 0 auto;
             position: relative;
+            page-break-inside: avoid;
         }
 
         .certificate-inner img {
             width: 800px;
+            height: auto;
+            display: block;
         }
 
         h1.name {
@@ -45,6 +55,9 @@
             white-space: nowrap;
             text-transform: capitalize !important;
             font-family: 'Pinyon Script', cursive;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
         }
 
         p.body-text {
@@ -55,9 +68,30 @@
             color: #252525;
             font-weight: 400;
             width: 600px;
-            font-family: 'Lato', sans-serif;
+            font-family: 'Lato', Arial, sans-serif;
             font-size: 18px;
             line-height: 1.4;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* PDF-specific styles */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .certificate-container {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* DomPDF specific styles */
+        @page {
+            margin: 0;
+            size: A4 landscape;
         }
     </style>
 </head>
@@ -65,17 +99,19 @@
 <body>
     <div class="certificate-container">
         <div class="certificate-inner">
-            <img src="./certificate-image.png" alt="certificate background">
+            <!-- Background image embedded as base64 -->
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
+                alt="certificate background">
 
-            <!-- Name -->
-            <h1 class="name">{{ $userName }}</h1>
+            <!-- Name in Pinyon Script font -->
+            <h1 class="name">{{ $userName ?? 'Student Name' }}</h1>
 
-            <!-- Body / description text -->
-            <!-- Body / description text -->
+            <!-- Body text in Lato font -->
             <p class="body-text">
-                This certificate is awarded to {{ $userName }} for successfully finishing NetFlow Academy's
-                "{{ $courseName }}" course, gaining essential skills for professional development.
-                Issued on {{ $issueDate }}. Certificate Code: {{ $certificateCode }}.
+                This certificate is awarded to {{ $userName ?? 'Student Name' }} for successfully finishing NetFlow
+                Academy's "{{ $courseName ?? 'Course Name' }}" course, gaining essential skills for professional
+                development.
+                Issued on {{ $issueDate ?? date('F j, Y') }}. Certificate Code: {{ $certificateCode ?? 'CERT-000' }}.
             </p>
         </div>
     </div>
