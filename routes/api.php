@@ -106,6 +106,13 @@ Route::get('debug-discussions', function () {
     }
 });
 
+// Certificate routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/certificates/my-certificates', [CertificateController::class, 'getMyCertificates'])->name('certificates.my');
+    Route::get('/certificates/{id}', [CertificateController::class, 'show'])->name('certificates.show');
+});
+
+
 // Main discussion routes - flexible and robust
 Route::prefix('discussions')->name('discussions.')->group(function () {
 
