@@ -2,13 +2,18 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Certificate</title>
     <style>
+        @page {
+            margin: 0;
+            size: 1000px 707px;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
         }
 
         .certificate {
@@ -21,7 +26,9 @@
         .certificate img {
             width: 1000px;
             height: 707px;
-            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         .name {
@@ -34,6 +41,9 @@
             text-align: center;
             margin: 0;
             padding: 0;
+            font-family: 'pinyonscript', cursive;
+            /* Use the custom font */
+            letter-spacing: 2px;
         }
 
         .body-text {
@@ -47,6 +57,7 @@
             line-height: 1.5;
             margin: 0;
             padding: 0;
+            font-family: 'DejaVu Sans', sans-serif;
         }
 
         .date-code {
@@ -59,11 +70,7 @@
             font-size: 12px;
             margin: 0;
             padding: 0;
-        }
-
-        @page {
-            margin: 0;
-            size: 1000px 707px;
+            font-family: 'DejaVu Sans', sans-serif;
         }
     </style>
 </head>
@@ -72,12 +79,18 @@
     <div class="certificate">
         <img src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
             alt="Certificate">
+
         <h1 class="name">{{ $userName ?? 'Student Name' }}</h1>
-        <p class="body-text">for successfully completing NetFlow Academy's
-            <strong>"{{ $courseName ?? 'Course Name' }}"</strong> course and gaining essential skills for professional
-            development.</p>
-        <p class="date-code">Issued on {{ $issueDate ?? date('F j, Y') }} | Certificate Code:
-            {{ $certificateCode ?? 'CERT-000' }}</p>
+
+        <p class="body-text">
+            for successfully completing NetFlow Academy's
+            <strong>"{{ $courseName ?? 'Course Name' }}"</strong> course
+            and gaining essential skills for professional development.
+        </p>
+
+        <p class="date-code">
+            Issued on {{ $issueDate ?? date('F j, Y') }} | Certificate Code: {{ $certificateCode ?? 'CERT-000' }}
+        </p>
     </div>
 </body>
 
