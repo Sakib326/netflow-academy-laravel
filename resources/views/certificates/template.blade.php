@@ -24,23 +24,23 @@
             height: 100%;
             font-family: "Lato", Arial, sans-serif;
             background: white;
-            overflow: hidden;
-            /* Prevent scrollbars in PDF */
         }
 
         .certificate-container {
             width: 100%;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative;
+            text-align: center;
             page-break-inside: avoid;
         }
 
         .certificate-inner {
             width: 1000px;
             height: 707px;
-            position: relative;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: white;
             page-break-inside: avoid;
         }
@@ -157,13 +157,6 @@
         /* DomPDF specific fixes */
         .dompdf_force_color {
             color: #1a365d !important;
-        }
-
-        /* Flexbox fallback for older PDF generators */
-        .certificate-container {
-            display: table-cell;
-            vertical-align: middle;
-            text-align: center;
         }
     </style>
 </head>
