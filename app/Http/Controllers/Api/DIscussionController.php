@@ -138,6 +138,17 @@ class DIscussionController extends Controller
     )]
     public function index(Request $request, int $course_id = null)
     {
+
+
+        // Add debug logging at the start
+        \Log::info('Discussion API called', [
+            'course_id' => $course_id,
+            'query_params' => $request->all(),
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'headers' => $request->headers->all()
+        ]);
+
         try {
             $course = null;
             $courseId = $course_id ?? $request->get('course_id');

@@ -61,28 +61,86 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-// Discussion routes (flexible - course_id optional)
-Route::prefix('discussions')->group(function () {
-    // Public routes
-    Route::get('/', [DIscussionController::class, 'index']); // All discussions or filter by course_id
-    Route::get('/{id}', [DIscussionController::class, 'show']); // Show specific discussion
+// ===========================================
+// 🔥 ROBUST DISCUSSION ROUTES
+// ===========================================
 
-    // Protected routes
+// Debug route (remove in production)
+Route::get('debug-discussions', function () {
+    try {
+        $totalDiscussions = \App\Models\Discussion::count();
+        $courseDiscussions = \App\Models\Discussion::where('discussable_type', \App\Models\Course::class)->count();
+        $parentThreads = \App\Models\Discussion::whereNull('parent_id')->count();
+
+        $sampleDiscussion = \App\Models\Discussion::with('user')
+            ->where('discussable_type', \App\Models\Course::class)
+            ->whereNull('parent_id')
+            ->first();
+
+        return response()->json([
+            'debug_info' => [
+                'total_discussions' => $totalDiscussions,
+                'course_discussions' => $courseDiscussions,
+                'parent_threads' => $parentThreads,
+                'total_courses' => \App\Models\Course::count(),
+                'total_users' => \App\Models\User::count(),
+            ],
+            'sample_discussion' => $sampleDiscussion ? [
+                'id' => $sampleDiscussion->id,
+                'title' => $sampleDiscussion->title,
+                'content' => substr($sampleDiscussion->content, 0, 100) . '...',
+                'user_name' => $sampleDiscussion->user->name ?? 'Unknown',
+                'discussable_type' => $sampleDiscussion->discussable_type,
+                'discussable_id' => $sampleDiscussion->discussable_id,
+                'created_at' => $sampleDiscussion->created_at,
+            ] : null,
+            'environment' => app()->environment(),
+            'database' => config('database.default'),
+            'timestamp' => now()->toISOString(),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
+// Main discussion routes - flexible and robust
+Route::prefix('discussions')->name('discussions.')->group(function () {
+
+    // Public routes
+    Route::get('/', [DIscussionController::class, 'index'])->name('index');
+    Route::get('/{discussion}', [DIscussionController::class, 'show'])
+        ->where('discussion', '[0-9]+')
+        ->name('show');
+
+    // Protected routes requiring authentication
     Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/', [DIscussionController::class, 'store']); // Create discussion
-        Route::put('/{id}', [DIscussionController::class, 'update']); // Update discussion
-        Route::delete('/{id}', [DIscussionController::class, 'destroy']); // Delete discussion
-        Route::post('/{id}/reply', [DIscussionController::class, 'reply']); // Reply to discussion
-        Route::post('/{id}/upvote', [DIscussionController::class, 'upvote']); // Upvote discussion
-        Route::post('/{id}/mark-answered', [DIscussionController::class, 'markAnswered']); // Mark as answered
+
+        // CRUD operations
+        Route::post('/', [DIscussionController::class, 'store'])->name('store');
+        Route::put('/{discussion}', [DIscussionController::class, 'update'])
+            ->where('discussion', '[0-9]+')
+            ->name('update');
+        Route::delete('/{discussion}', [DIscussionController::class, 'destroy'])
+            ->where('discussion', '[0-9]+')
+            ->name('destroy');
+
+        // Discussion actions
+        Route::post('/{discussion}/reply', [DIscussionController::class, 'reply'])
+            ->where('discussion', '[0-9]+')
+            ->name('reply');
+        Route::post('/{discussion}/upvote', [DIscussionController::class, 'upvote'])
+            ->where('discussion', '[0-9]+')
+            ->name('upvote');
+        Route::post('/{discussion}/mark-answered', [DIscussionController::class, 'markAnswered'])
+            ->where('discussion', '[0-9]+')
+            ->name('mark_answered');
     });
 });
 
-// Course-specific discussion routes (for backward compatibility)
-Route::prefix('courses/{course_id}')->group(function () {
-    Route::get('discussions', [DIscussionController::class, 'index']); // Course discussions
-    Route::post('discussions', [DIscussionController::class, 'store'])->middleware('auth:sanctum'); // Create in course
-});
+
 
 
 Route::middleware('auth:sanctum')->group(function () {
