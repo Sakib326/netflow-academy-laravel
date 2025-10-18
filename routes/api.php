@@ -60,19 +60,30 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::prefix('courses/{course_id}')->group(function () {
-    Route::get('discussions', [DIscussionController::class, 'index']);
-    Route::post('discussions', [DIscussionController::class, 'store'])->middleware('auth:sanctum');
+
+// Discussion routes (flexible - course_id optional)
+Route::prefix('discussions')->group(function () {
+    // Public routes
+    Route::get('/', [DIscussionController::class, 'index']); // All discussions or filter by course_id
+    Route::get('/{id}', [DIscussionController::class, 'show']); // Show specific discussion
+
+    // Protected routes
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/', [DIscussionController::class, 'store']); // Create discussion
+        Route::put('/{id}', [DIscussionController::class, 'update']); // Update discussion
+        Route::delete('/{id}', [DIscussionController::class, 'destroy']); // Delete discussion
+        Route::post('/{id}/reply', [DIscussionController::class, 'reply']); // Reply to discussion
+        Route::post('/{id}/upvote', [DIscussionController::class, 'upvote']); // Upvote discussion
+        Route::post('/{id}/mark-answered', [DIscussionController::class, 'markAnswered']); // Mark as answered
+    });
 });
 
-Route::prefix('discussions')->middleware('auth:sanctum')->group(function () {
-    Route::get('{id}', [DIscussionController::class, 'show'])->withoutMiddleware('auth:sanctum');
-    Route::put('{id}', [DIscussionController::class, 'update']);
-    Route::delete('{id}', [DIscussionController::class, 'destroy']);
-    Route::post('{id}/reply', [DIscussionController::class, 'reply']);
-    Route::post('{id}/upvote', [DIscussionController::class, 'upvote']);
-    Route::post('{id}/mark-answered', [DIscussionController::class, 'markAnswered']);
+// Course-specific discussion routes (for backward compatibility)
+Route::prefix('courses/{course_id}')->group(function () {
+    Route::get('discussions', [DIscussionController::class, 'index']); // Course discussions
+    Route::post('discussions', [DIscussionController::class, 'store'])->middleware('auth:sanctum'); // Create in course
 });
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/courses/{course_id}/batches/{batch_id}/exams', [ExamController::class, 'getCourseExams']);

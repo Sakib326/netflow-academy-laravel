@@ -839,19 +839,20 @@
                 ]
             }
         },
-        "/api/courses/{course_id}/discussions": {
+        "/api/discussions": {
             "get": {
                 "tags": [
                     "Discussions"
                 ],
-                "summary": "List discussion threads for a course",
-                "description": "Returns paginated top-level discussion threads for the given course.",
-                "operationId": "2b1d2a804237c6ae872d8e3519f45536",
+                "summary": "List all discussion threads",
+                "description": "Returns paginated discussion threads. Optionally filter by course_id.",
+                "operationId": "146bb477efef072b665203a4015a2212",
                 "parameters": [
                     {
                         "name": "course_id",
-                        "in": "path",
-                        "required": true,
+                        "in": "query",
+                        "description": "Filter discussions by course ID",
+                        "required": false,
                         "schema": {
                             "type": "integer"
                         }
@@ -926,6 +927,9 @@
                     },
                     "404": {
                         "description": "Course not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 }
             },
@@ -934,18 +938,8 @@
                     "Discussions"
                 ],
                 "summary": "Create a new discussion thread",
-                "description": "Only enrolled (active) users can create threads.",
-                "operationId": "823b81671681c7c45dbaea4f2b1a7fb1",
-                "parameters": [
-                    {
-                        "name": "course_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
+                "description": "Create a discussion thread. Course ID is optional.",
+                "operationId": "bd1f33c06b67b3231207aaf6ffbf4c95",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -956,6 +950,11 @@
                                     "content"
                                 ],
                                 "properties": {
+                                    "course_id": {
+                                        "type": "integer",
+                                        "example": 1,
+                                        "nullable": true
+                                    },
                                     "title": {
                                         "type": "string",
                                         "example": "Question about this course"
@@ -993,6 +992,9 @@
                     },
                     "404": {
                         "description": "Course not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
@@ -1033,6 +1035,9 @@
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 }
             },
@@ -1081,6 +1086,9 @@
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
@@ -1115,6 +1123,9 @@
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
@@ -1180,6 +1191,9 @@
                     },
                     "422": {
                         "description": "Validation error"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
@@ -1213,6 +1227,9 @@
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
@@ -1244,11 +1261,17 @@
                     "200": {
                         "description": "Marked as answered"
                     },
+                    "400": {
+                        "description": "Bad request"
+                    },
                     "403": {
                         "description": "Forbidden"
                     },
                     "404": {
                         "description": "Not found"
+                    },
+                    "500": {
+                        "description": "Server error"
                     }
                 },
                 "security": [
