@@ -4,7 +4,6 @@ namespace App\Observers;
 
 use App\Models\ExamResponse;
 use App\Models\Certificate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Mpdf\Mpdf;
 
@@ -28,19 +27,13 @@ class ExamResponseObserver
         try {
             $user = $examResponse->user;
             $course = $examResponse->exam->course;
-            $certificateCode = 'CERT-' . $course->id . '-' . $user->id . '-' . Str::random(8);
-            $fileName = Str::slug($user->name . '-' . $course->title . '-' . $certificateCode) . '.pdf';
+            $certificateCode = 'CERT-' . strtoupper(Str::random(8));
+            $fileName = Str::slug($user->name . '-' . $course->title) . '-' . time() . '.pdf';
 
-            // Create directory if it doesn't exist
+            // Create certificates directory if it doesn't exist
             $publicPath = public_path('certificates');
             if (!file_exists($publicPath)) {
                 mkdir($publicPath, 0755, true);
-            }
-
-            // Create temp directory if it doesn't exist
-            $tempPath = storage_path('app/temp');
-            if (!file_exists($tempPath)) {
-                mkdir($tempPath, 0755, true);
             }
 
             $filePath = 'certificates/' . $fileName;
@@ -58,37 +51,40 @@ class ExamResponseObserver
             // Render the Blade view to HTML
             $html = view('certificates.template', $data)->render();
 
-            // Create mPDF instance with Pinyon Script font
+            // Initialize mPDF with custom font support
+            $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+            $fontDirs = $defaultConfig['fontDir'];
+
+            $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+            $fontData = $defaultFontConfig['fontdata'];
+
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => [264.583, 187.145], // 1000x707 px converted to mm
-                'orientation' => 'L', // Landscape
+                'format' => [264.583, 187.145], // 1000px x 707px in mm
+                'orientation' => 'L',
                 'margin_top' => 0,
                 'margin_right' => 0,
                 'margin_bottom' => 0,
                 'margin_left' => 0,
-                'margin_header' => 0,
-                'margin_footer' => 0,
-                'default_font_size' => 12,
-                'default_font' => 'dejavusans',
-                'tempDir' => storage_path('app/temp'),
-                // Add custom font directory
-                'fontDir' => [
+                'fontDir' => array_merge($fontDirs, [
                     storage_path('fonts'),
-                ],
-                // Define custom fonts
-                'fontdata' => [
+                ]),
+                'fontdata' => $fontData + [
                     'pinyonscript' => [
                         'R' => 'PinyonScript-Regular.ttf',
-                    ],
+                    ]
                 ],
+                'default_font' => 'dejavusans',
             ]);
+
+            // Disable automatic page breaks
+            $mpdf->SetAutoPageBreak(false);
 
             // Write HTML to PDF
             $mpdf->WriteHTML($html);
 
-            // Save PDF to public folder
-            $mpdf->Output($fullPath, 'F');
+            // Output to file
+            $mpdf->Output($fullPath, \Mpdf\Output\Destination::FILE);
 
             // Create the certificate record in the database
             Certificate::create([
@@ -102,17 +98,19 @@ class ExamResponseObserver
 
             \Log::info('Certificate generated successfully', [
                 'certificate_code' => $certificateCode,
-                'user_id' => $user->id,
-                'course_id' => $course->id,
+                'file_path' => $filePath,
+                'user' => $user->name,
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Failed to generate certificate', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => $examResponse->user_id,
-                'exam_response_id' => $examResponse->id,
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'user_id' => $examResponse->user_id ?? null,
             ]);
+
+            throw $e; // Re-throw to see the actual error
         }
     }
 }
