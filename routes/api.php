@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\OrderController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ZoomController;
+use App\Http\Controllers\Api\CouponController;
+use App\Http\Controllers\Api\CertificateController;
 
 // Authentication routes with 'auth' prefix
 Route::prefix('auth')->group(function () {
