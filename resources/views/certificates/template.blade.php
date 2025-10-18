@@ -138,7 +138,6 @@
             <img src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
                 alt="certificate background">
 
-            <!-- Name in Pinyon Script font -->
             <h1 class="name">{{ $userName ?? 'Student Name' }}</h1>
 
             <!-- Course completion text -->
