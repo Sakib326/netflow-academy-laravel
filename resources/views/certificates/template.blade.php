@@ -1,90 +1,86 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Lato&display=swap" rel="stylesheet">
+
+    <style>
         body {
             margin: 0;
             padding: 0;
-            width: 1000px;
-            height: 707px;
-            font-family: DejaVuSans, sans-serif;
         }
 
-        .certificate {
-            width: 1000px;
-            height: 707px;
+        .certificate-container {
+            width: 100%;
+            text-align: center;
+        }
+
+        .certificate-inner {
+            display: inline-block;
+            width: 800px;
+            text-align: center;
+            margin: auto;
             position: relative;
-            background-size: cover;
         }
 
-        .certificate img {
-            width: 1000px;
-            height: 707px;
-            display: block;
+        .certificate-inner img {
+            width: 800px;
+            /* FIX: Add this line to flip the image back if it's inverted */
+            transform: rotate(180deg);
         }
 
-        .name {
+        h1.name {
             position: absolute;
-            top: 340px;
+            /* FIX: Removed transform, adjusted positioning */
+            top: 200px;
             left: 0;
-            width: 1000px;
-            font-size: 48px;
-            color: #1a365d;
+            width: 800px;
             text-align: center;
-            font-family: pinyonscript;
+            font-size: 55px;
+            font-weight: 500;
             letter-spacing: 2px;
-            line-height: 1;
+            color: #252525;
+            white-space: nowrap;
+            text-transform: capitalize !important;
+            font-family: 'Pinyon Script', cursive;
         }
 
-        .body-text {
+        p.body-text {
             position: absolute;
-            top: 410px;
-            left: 150px;
-            width: 700px;
-            color: #1a365d;
+            /* FIX: Removed transform, adjusted positioning */
+            top: 290px;
+            left: 100px;
+            /* (800px container - 600px width) / 2 */
+            width: 600px;
             text-align: center;
-            font-size: 16px;
-            line-height: 24px;
-            font-family: DejaVuSans, sans-serif;
-        }
-
-        .date-code {
-            position: absolute;
-            top: 470px;
-            left: 0;
-            width: 1000px;
-            color: #1a365d;
-            text-align: center;
-            font-size: 12px;
-            font-family: DejaVuSans, sans-serif;
+            color: #252525;
+            font-weight: 400;
+            font-family: 'Lato', sans-serif;
+            font-size: 18px;
+            line-height: 1.4;
         }
     </style>
 </head>
 
 <body>
-    <div class="certificate">
-        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
-            alt="Certificate" />
+    <div class="certificate-container">
+        <div class="certificate-inner">
+            <img src="./certificate-image.png" alt="certificate background">
 
-        <div class="name">{{ $userName ?? 'Student Name' }}</div>
+            <!-- Name -->
+            <h1 class="name">Mahmudul Hasan</h1>
 
-        <div class="body-text">
-            for successfully completing NetFlow Academy's
-            <strong>"{{ $courseName ?? 'Course Name' }}"</strong> course
-            and gaining essential skills for professional development.
-        </div>
-
-        <div class="date-code">
-            Issued on {{ $issueDate ?? date('F j, Y') }} | Certificate Code: {{ $certificateCode ?? 'CERT-000' }}
+            <!-- Body / description text -->
+            <p class="body-text">
+                This certificate is given to Marceline Anderson for his achievement during the month of July 2024.
+                Hopefully this certificate will be a great motivation.
+            </p>
         </div>
     </div>
 </body>
