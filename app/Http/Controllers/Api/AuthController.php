@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
+use App\Mail\PasswordResetCodeMail;
 
 #[OA\Info(
     version: "1.0.0",
@@ -180,7 +182,7 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        
+
         // Add full URL for avatar
         $userArray = $user->toArray();
         if ($user->avatar) {
@@ -207,9 +209,9 @@ class AuthController extends Controller
                         new OA\Property(property: "name", type: "string", example: "John Doe"),
                         new OA\Property(property: "phone", type: "string", example: "+8801234567890"),
                         new OA\Property(
-                            property: "avatar", 
-                            type: "string", 
-                            format: "binary", 
+                            property: "avatar",
+                            type: "string",
+                            format: "binary",
                             description: "Avatar image file (jpg, jpeg, png, gif, webp - max 2MB)"
                         ),
                     ]
@@ -242,7 +244,7 @@ class AuthController extends Controller
         ]);
 
         $user = $request->user();
-        
+
         // Handle avatar upload
         if ($request->hasFile('avatar')) {
             // Delete old avatar if exists
@@ -259,7 +261,7 @@ class AuthController extends Controller
         if ($request->has('name')) {
             $user->name = $request->name;
         }
-        
+
         if ($request->has('phone')) {
             $user->phone = $request->phone;
         }
@@ -338,52 +340,87 @@ class AuthController extends Controller
     #[OA\Post(
         path: "/api/auth/forgot-password",
         summary: "Forgot password",
-        description: "Send password reset link to email",
+        description: "Send a 6-digit password reset code to the user's email.",
         tags: ["Authentication"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
                 required: ["email"],
+                properties: [new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com")]
+            )
+        ),
+        responses: [new OA\Response(response: 200, description: "Reset code sent")]
+    )]
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email|exists:users,email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Generate a 6-digit code
+        $resetCode = (string) random_int(100000, 999999);
+
+        // Save the code and expiration date (e.g., 10 minutes from now)
+        $user->update([
+            'password_reset_code' => $resetCode,
+            'password_reset_expires_at' => now()->addMinutes(10)
+        ]);
+
+        // Send the email using the Mailable class
+        Mail::to($user->email)->send(new PasswordResetCodeMail($user, $resetCode));
+
+        return response()->json(['message' => 'A password reset code has been sent to your email.']);
+    }
+
+    #[OA\Post(
+        path: "/api/auth/reset-password",
+        summary: "Reset password with code",
+        description: "Reset user password using the 6-digit code from the email.",
+        tags: ["Authentication"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ["email", "code", "password", "password_confirmation"],
                 properties: [
-                    new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
+                new OA\Property(property: "email", type: "string", format: "email", example: "john@example.com"),
+                new OA\Property(property: "code", type: "string", example: "123456", description: "The 6-digit code from the email."),
+                new OA\Property(property: "password", type: "string", format: "password", example: "newpassword123"),
+                new OA\Property(property: "password_confirmation", type: "string", format: "password", example: "newpassword123"),
                 ]
             )
         ),
         responses: [
-            new OA\Response(
-                response: 200,
-                description: "Password reset link sent",
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: "message", type: "string", example: "Password reset link sent to your email"),
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 422,
-                description: "Validation errors"
-            )
+        new OA\Response(response: 200, description: "Password has been reset successfully."),
+        new OA\Response(response: 422, description: "Invalid code or validation errors.")
         ]
     )]
-    public function forgotPassword(Request $request)
+    public function resetPassword(Request $request)
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
+            'code' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        $user = User::where('email', $request->email)->first();
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'Password reset link sent to your email',
+        // Check if the code is valid and not expired
+        if (!$user->password_reset_code ||
+            $user->password_reset_code !== $request->code ||
+            $user->password_reset_expires_at->isPast()) {
+            throw ValidationException::withMessages([
+                'code' => ['The reset code is invalid or has expired.'],
             ]);
         }
 
-        throw ValidationException::withMessages([
-            'email' => ['Unable to send reset link. Please try again.'],
+        // Update the password
+        $user->update([
+            'password' => Hash::make($request->password),
+            'password_reset_code' => null, // Clear the code
+            'password_reset_expires_at' => null,
         ]);
+
+        return response()->json(['message' => 'Your password has been reset successfully.']);
     }
 
     #[OA\Post(

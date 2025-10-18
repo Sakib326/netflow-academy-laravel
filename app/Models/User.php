@@ -53,17 +53,21 @@ class User extends Authenticatable implements FilamentUser
     use HasApiTokens;
     use HasFactory;
     use Notifiable;
-
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role', 'avatar', 'is_active','bio','email_verified_at', 'designation'
-    ];
+           'name', 'email', 'phone', 'password', 'role', 'avatar', 'is_active', 'bio', 'email_verified_at', 'designation',
+           'password_reset_code', 'password_reset_expires_at' // <-- Add these
+       ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password', 'remember_token',
+        'password_reset_code', 'password_reset_expires_at' // <-- Add these
+    ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'is_active' => 'boolean',
-        'role' => 'string'
+        'role' => 'string',
+        'password_reset_expires_at' => 'datetime', // <-- Add this
     ];
 
     // Relations
