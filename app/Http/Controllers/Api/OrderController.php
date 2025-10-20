@@ -435,14 +435,20 @@ class OrderController extends Controller
             $order->save();
 
             // Create enrollment if course has batches
-            $batch = $order->course->batches()->where('status', 'active')->first();
+            $batch = $order->course->batches()->where('is_active', 1)->first();
             if ($batch) {
-                Enrollment::create([
-                    'user_id' => $order->user_id,
-                    'batch_id' => $batch->id,
-                    'order_id' => $order->id,
-                    'status' => 'active'
-                ]);
+
+                Enrollment::updateOrCreate(
+                    [
+                        'user_id' => $order->user_id,
+                        'batch_id' => $batch->id,
+                    ],
+                    [
+                        'order_id' => $order->id,
+                        'status' => 'active'
+                    ]
+                );
+
             }
 
             DB::commit();
