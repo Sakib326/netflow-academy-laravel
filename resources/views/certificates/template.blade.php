@@ -3,82 +3,84 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Lato&display=swap" rel="stylesheet">
-
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
-        .certificate-container {
-            width: 100%;
-            text-align: center;
-        }
-
-        .certificate-inner {
-            display: inline-block;
-            width: 800px;
-            text-align: center;
-            margin: auto;
+        body {
+            width: 2000px;
+            height: 1414px;
+            margin: 0;
+            padding: 0;
             position: relative;
+            font-family: "DejaVu Sans", sans-serif;
+            overflow: hidden;
         }
 
-        .certificate-inner img {
-            width: 800px;
-            height: auto;
-            display: block;
-        }
-
-
-        h1.name {
+        /* Background Image (exact fit) */
+        .background {
             position: absolute;
-            top: 330px;
-            /* adjust according to your design */
+            top: 0;
             left: 0;
-            width: 100%;
-            text-align: center;
-            font-size: 56px;
-            font-family: 'Pinyon Script', cursive;
-            color: #252525;
-            font-weight: 500;
-            letter-spacing: 2px;
-            text-transform: capitalize;
+            width: 2000px;
+            height: 1414px;
+            object-fit: cover;
+            z-index: 0;
         }
 
-        p.body-text {
+        /* Overlay text container */
+        .content {
             position: absolute;
-            top: 440px;
-            /* adjust based on design */
-            left: 10%;
-            width: 80%;
+            top: 0;
+            left: 0;
+            width: 2000px;
+            height: 1414px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            font-family: 'Lato', sans-serif;
-            font-size: 18px;
+            z-index: 1;
+        }
+
+        /* Student name (centered prominently) */
+        .name {
+            font-size: 140px;
             color: #252525;
-            line-height: 1.5;
+            font-family: "Pinyon Script", cursive;
+            letter-spacing: 6px;
+            margin-top: -150px;
+            /* Adjust vertically as per design */
+        }
+
+        /* Certificate description text */
+        .body-text {
+            font-size: 45px;
+            color: #252525;
+            line-height: 68px;
+            width: 1600px;
+            margin-top: 40px;
+            font-family: "DejaVu Sans", sans-serif;
         }
     </style>
 </head>
 
 <body>
-    <div class="certificate-container">
-        <div class="certificate-inner">
-            <img src="./certificate-image.png" alt="certificate background">
+    <img class="background"
+        src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
+        alt="Certificate Background">
 
-            <!-- Name -->
-            <h1 class="name">Mahmudul Hasan</h1>
-
-            <!-- Body / description text -->
-            <p class="body-text">
-                This certificate is given to Marceline Anderson for his achievement during the month of July 2024.
-                Hopefully this certificate will be a great motivation.
-            </p>
+    <div class="content">
+        <div class="name">{{ $userName ?? 'Student Name' }}</div>
+        <div class="body-text">
+            This certificate is proudly presented to <strong>{{ $userName ?? 'Student Name' }}</strong> for successfully
+            completing<br>
+            the course <strong>"{{ $courseName ?? 'Course Name' }}"</strong>.<br><br>
+            Certificate Code: <strong>{{ $certificateCode ?? 'CERT-000' }}</strong>
         </div>
     </div>
 </body>

@@ -58,14 +58,17 @@ class ExamResponseObserver
             $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
             $fontData = $defaultFontConfig['fontdata'];
 
+            // ✅ FIXED: Set custom page size to match 2000x1414 px
+            // Convert pixels to mm: 2000px ÷ 3.7795 = 529.17mm, 1414px ÷ 3.7795 = 374.02mm
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-              'format' => 'A4-L',
-                'orientation' => 'L',
+                'format' => [529.17, 374.02], // Custom size in mm (2000x1414 px)
+                'orientation' => 'L', // Landscape
                 'margin_top' => 0,
                 'margin_right' => 0,
                 'margin_bottom' => 0,
                 'margin_left' => 0,
+                'dpi' => 72, // ✅ Set DPI for accurate rendering
                 'fontDir' => array_merge($fontDirs, [
                     storage_path('fonts'),
                 ]),
@@ -79,6 +82,9 @@ class ExamResponseObserver
 
             // Disable automatic page breaks
             $mpdf->SetAutoPageBreak(false);
+
+            // ✅ Set page format explicitly
+            $mpdf->AddPage('L', [529.17, 374.02]);
 
             // Write HTML to PDF
             $mpdf->WriteHTML($html);
@@ -110,7 +116,7 @@ class ExamResponseObserver
                 'user_id' => $examResponse->user_id ?? null,
             ]);
 
-            throw $e; // Re-throw to see the actual error
+            throw $e;
         }
     }
 }
