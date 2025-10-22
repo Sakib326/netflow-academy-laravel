@@ -31,39 +31,37 @@
 
         .certificate-inner img {
             width: 800px;
-            /* FIX: Add this line to flip the image back if it's inverted */
-            transform: rotate(180deg);
+            height: auto;
+            display: block;
         }
+
 
         h1.name {
             position: absolute;
-            /* FIX: Removed transform, adjusted positioning */
-            top: 200px;
+            top: 330px;
+            /* adjust according to your design */
             left: 0;
-            width: 800px;
+            width: 100%;
             text-align: center;
-            font-size: 55px;
+            font-size: 56px;
+            font-family: 'Pinyon Script', cursive;
+            color: #252525;
             font-weight: 500;
             letter-spacing: 2px;
-            color: #252525;
-            white-space: nowrap;
-            text-transform: capitalize !important;
-            font-family: 'Pinyon Script', cursive;
+            text-transform: capitalize;
         }
 
         p.body-text {
             position: absolute;
-            /* FIX: Removed transform, adjusted positioning */
-            top: 290px;
-            left: 100px;
-            /* (800px container - 600px width) / 2 */
-            width: 600px;
+            top: 440px;
+            /* adjust based on design */
+            left: 10%;
+            width: 80%;
             text-align: center;
-            color: #252525;
-            font-weight: 400;
             font-family: 'Lato', sans-serif;
             font-size: 18px;
-            line-height: 1.4;
+            color: #252525;
+            line-height: 1.5;
         }
     </style>
 </head>
