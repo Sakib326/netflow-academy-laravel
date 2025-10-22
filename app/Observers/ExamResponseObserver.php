@@ -60,7 +60,7 @@ class ExamResponseObserver
 
             $mpdf = new Mpdf([
                 'mode' => 'utf-8',
-                'format' => [264.583, 187.145], // 1000px x 707px in mm
+              'format' => 'A4-L',
                 'orientation' => 'L',
                 'margin_top' => 0,
                 'margin_right' => 0,
