@@ -40,7 +40,7 @@
         .user-name {
             font-size: 60px;
             color: #0a2a43;
-            font-family: 'pinyonscript', cursive;
+            font-family: 'dmserif', sans-serif;
             /* padding: 20px 0; */
         }
 

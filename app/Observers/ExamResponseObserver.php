@@ -71,6 +71,10 @@ class ExamResponseObserver
                 'pinyonscript' => [
                     'R' => 'PinyonScript-Regular.ttf',
                 ],
+                 'dmserif' => [
+                    'R' => 'DMSerifDisplay-Regular.ttf',
+                    'I' => 'DMSerifDisplay-Italic.ttf', // Optional if you have italic
+                ],
             ],
             'default_font'  => 'dejavusans',
         ]);
