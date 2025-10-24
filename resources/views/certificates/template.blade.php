@@ -1,88 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-    <meta charset="UTF-8">
-    <title>Certificate</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            width: 2000px;
-            height: 1414px;
             margin: 0;
             padding: 0;
+            font-family: 'dejavusans', sans-serif;
+        }
+
+        .certificate-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .background-row {
             position: relative;
-            font-family: "DejaVu Sans", sans-serif;
-            overflow: hidden;
         }
 
-        /* Background Image (exact fit) */
-        .background {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .background-image {
             width: 2000px;
+            /* ✅ FIXED: Set exact dimensions */
             height: 1414px;
-            object-fit: cover;
-            z-index: 0;
+            /* ✅ FIXED: Set exact dimensions */
+            display: block;
         }
 
-        /* Overlay text container */
-        .content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 2000px;
-            height: 1414px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .content-table {
+            width: 100%;
             text-align: center;
-            z-index: 1;
+            margin-top: -710px;
         }
 
-        /* Student name (centered prominently) */
-        .name {
-            font-size: 140px;
-            color: #252525;
-            font-family: "Pinyon Script", cursive;
-            letter-spacing: 6px;
-            margin-top: -150px;
-            /* Adjust vertically as per design */
+        .spacer {
+            height: 300px;
         }
 
-        /* Certificate description text */
-        .body-text {
-            font-size: 45px;
-            color: #252525;
-            line-height: 68px;
-            width: 1600px;
-            margin-top: 40px;
-            font-family: "DejaVu Sans", sans-serif;
+        .user-name {
+            font-size: 60px;
+            color: #0a2a43;
+            font-family: 'pinyonscript', cursive;
+            /* padding: 20px 0; */
+        }
+
+        .course-name {
+            font-size: 18px;
+            letter-spacing: 1px;
+            color: #000000;
+
+            padding: 0 100px;
+        }
+
+        .issue-date {
+            font-size: 18px;
+            color: #000000;
+            /* padding: 15px 0; */
+        }
+
+        .certificate-code {
+            font-size: 18px;
+            color: #000000;
+            /* padding: 10px 0; */
         }
     </style>
 </head>
 
 <body>
-    <img class="background"
-        src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
-        alt="Certificate Background">
+    <table class="certificate-table" cellpadding="0" cellspacing="0">
+        <tr class="background-row">
+            <td>
+                <img class="background-image"
+                    src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('views/certificates/certificate-image.png'))) }}"
+                    alt="Certificate Background">
+            </td>
+        </tr>
+    </table>
 
-    <div class="content">
-        <div class="name">{{ $userName ?? 'Student Name' }}</div>
-        <div class="body-text">
-            This certificate is proudly presented to <strong>{{ $userName ?? 'Student Name' }}</strong> for successfully
-            completing<br>
-            the course <strong>"{{ $courseName ?? 'Course Name' }}"</strong>.<br><br>
-            Certificate Code: <strong>{{ $certificateCode ?? 'CERT-000' }}</strong>
-        </div>
-    </div>
+    <table class="content-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="spacer"></td>
+        </tr>
+        <tr>
+            <td class="user-name">{{ $userName }}</td>
+        </tr>
+        <tr>
+            <td class="course-name">
+                Successfully finished NetFlow Academy’s
+                <strong>{{ $courseName }}</strong> course,
+                gaining essential skills for professional development.
+            </td>
+        </tr>
+        <tr>
+            <td class="issue-date">Date: {{ $issueDate }}</td>
+        </tr>
+        <tr>
+            <td class="certificate-code">ID: {{ $certificateCode }}</td>
+        </tr>
+    </table>
 </body>
 
 </html>
