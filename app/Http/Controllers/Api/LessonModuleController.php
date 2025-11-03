@@ -66,33 +66,45 @@ class LessonModuleController extends Controller
             $userBatchId = $enrollment->batch_id;
         }
 
+
+        \Log::info('User Batch ID', ['userBatchId' => $userBatchId, 'userId' => $user->id]);
+
+
         $modules = $course->modules
-            ->filter(function ($module) use ($userBatchId) {
-                return is_null($module->batch_id) || $module->batch_id == $userBatchId;
-            })
-            ->map(function ($module) {
-                return [
-                    'id' => $module->id,
-                    'title' => $module->title,
-                    'description' => $module->description,
-                    'order' => $module->order_index,
-                    'lessons' => $module->lessons->map(function ($lesson) {
+                    ->filter(function ($module) use ($userBatchId) {
+                        return is_null($module->batch_id) || $module->batch_id == $userBatchId;
+                    })
+                    ->map(function ($module) use ($userBatchId) { // ← Add $userBatchId here
                         return [
-                            'id' => $lesson->id,
-                            'title' => $lesson->title,
-                            'slug' => $lesson->slug,
-                            'description' => $lesson->description,
-                            'duration' => $lesson->duration,
-                            'lesson_type' => $lesson->type,
-                            'order' => $lesson->order_index,
-                            'is_free' => $lesson->is_free,
-                            'content' => $lesson->content,
-                            'questions' => $lesson->questions,
-                            'files' => $lesson->files,
+                            'id' => $module->id,
+                            'title' => $module->title,
+                            'description' => $module->description,
+                            'order' => $module->order_index,
+                            'lessons' => $module->lessons
+                                // ✅ ADD THIS FILTER
+                                ->filter(function ($lesson) use ($userBatchId) {
+                                    return is_null($lesson->batch_id) || $lesson->batch_id == $userBatchId;
+                                })
+                                ->map(function ($lesson) {
+                                    return [
+                                        'id' => $lesson->id,
+                                        'title' => $lesson->title,
+                                        'slug' => $lesson->slug,
+                                        'description' => $lesson->description,
+                                        'duration' => $lesson->duration,
+                                        'lesson_type' => $lesson->type,
+                                        'order' => $lesson->order_index,
+                                        'is_free' => $lesson->is_free,
+                                        'content' => $lesson->content,
+                                        'questions' => $lesson->questions,
+                                        'files' => $lesson->files,
+                                    ];
+                                })
+                                ->values() // ← Reset array keys after filtering
                         ];
                     })
-                ];
-            });
+                    ->values();
+
 
         return response()->json([
             'success' => true,
