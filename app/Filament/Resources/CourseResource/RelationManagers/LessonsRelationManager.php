@@ -49,6 +49,14 @@ class LessonsRelationManager extends RelationManager
                                     ->alphaDash()
                                     ->columnSpan(2),
 
+                                //batch_id select box
+                                Forms\Components\Select::make('batch_id')
+                                    ->label('Batch')
+                                    ->relationship('batch', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpan(1),
+
                                 Forms\Components\Select::make('type')
                                     ->options([
                                         'video' => 'Video',

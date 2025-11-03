@@ -11,7 +11,7 @@ class Lesson extends Model
 
     protected $fillable = [
         'module_id', 'title', 'content', 'type', 'files', 'slug', 'batch_id', 'questions',
-        'order_index', 'status', 'is_free', 'available_from', 
+        'order_index', 'status', 'is_free', 'available_from',
         'available_until', 'max_score'
     ];
 
@@ -57,7 +57,7 @@ class Lesson extends Model
         $now = now();
         $availableFrom = !$this->available_from || $this->available_from <= $now;
         $availableUntil = !$this->available_until || $this->available_until >= $now;
-        
+
         return $this->status === 'published' && $availableFrom && $availableUntil;
     }
 
@@ -74,7 +74,7 @@ class Lesson extends Model
         $submission = $this->submissions()
             ->where('user_id', $userId)
             ->first();
-            
+
         return $submission ? $submission->score : null;
     }
 
@@ -91,7 +91,7 @@ class Lesson extends Model
                 return $this->content['questions'];
             }
         }
-        
+
         return [];
     }
 
@@ -100,10 +100,10 @@ class Lesson extends Model
         if (!$this->isQuiz()) {
             return $this->max_score ?? 0;
         }
-        
+
         $questions = $this->getQuestions();
         $totalFromQuestions = collect($questions)->sum('marks');
-        
+
         // Return the sum from questions, or fallback to max_score
         return $totalFromQuestions > 0 ? $totalFromQuestions : ($this->max_score ?? 0);
     }
@@ -121,11 +121,19 @@ class Lesson extends Model
         if (!$this->module || !$this->module->course) {
             return 0;
         }
-        
+
         $total = $this->module->course->getTotalStudents();
-        if ($total == 0) return 0;
-        
+        if ($total == 0) {
+            return 0;
+        }
+
         $completed = $this->submissions()->count();
         return round(($completed / $total) * 100, 2);
+    }
+
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
     }
 }
