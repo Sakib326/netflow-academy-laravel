@@ -85,7 +85,7 @@ class LessonModuleController extends Controller
                                 ->filter(function ($lesson) use ($userBatchId) {
                                     return is_null($lesson->batch_id) || $lesson->batch_id == $userBatchId;
                                 })
-                                ->map(function ($lesson) {
+                                ->map(function ($lesson) use ($userBatchId) {
 
                                     $filteredFiles = collect($lesson->files)->filter(function ($file) use ($userBatchId) {
                                         // If video_batch_id is not set, show the file to everyone
