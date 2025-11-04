@@ -150,22 +150,29 @@ class LessonModuleController extends Controller
      */
     public function lessonBySlug(string $slug)
     {
+
         $lesson = Lesson::with(['module:id,course_id,title', 'module.course:id,title'])
-            ->where('slug', $slug)
-            ->firstOrFail();
+                  ->where('slug', $slug)
+                  ->firstOrFail();
 
         $user = Auth::user();
         $course = $lesson->module->course ?? null;
         $courseId = $lesson->module->course_id ?? null;
 
         $isEnrolled = false;
+        $userBatchId = null; // ✅ ADD THIS
+
         if ($course && $courseId) {
-            $isEnrolled = Enrollment::where('user_id', $user->id)
+            // ✅ Get the enrollment to extract batch_id
+            $enrollment = Enrollment::where('user_id', $user->id)
                 ->where('status', 'active')
                 ->whereHas('batch', function ($q) use ($course) {
                     $q->where('course_id', $course->id);
                 })
-                ->exists();
+                ->first();
+
+            $isEnrolled = (bool) $enrollment;
+            $userBatchId = $enrollment->batch_id ?? null; // ✅ Extract batch_id
         }
 
         if (!$lesson->is_free && !$isEnrolled) {
@@ -174,6 +181,13 @@ class LessonModuleController extends Controller
                 'message' => 'You must purchase this course to access this lesson.',
             ], 403);
         }
+
+        // ✅ Filter files by video_batch_id
+        $filteredFiles = collect($lesson->files)->filter(function ($file) use ($userBatchId) {
+            return !isset($file['video_batch_id'])
+                || $file['video_batch_id'] === null
+                || $file['video_batch_id'] == $userBatchId;
+        })->values()->toArray();
 
         return response()->json([
             'success' => true,
@@ -188,10 +202,11 @@ class LessonModuleController extends Controller
                 'is_free' => $lesson->is_free,
                 'content' => $lesson->content,
                 'questions' => $lesson->questions,
-                'files' => $lesson->files,
+                'files' => $filteredFiles, // ✅ CHANGED: Use filtered files
             ],
             'enrolled' => $isEnrolled,
         ]);
+
     }
 
     /**
