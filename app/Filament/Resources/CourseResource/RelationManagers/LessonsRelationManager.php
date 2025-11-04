@@ -207,7 +207,19 @@ class LessonsRelationManager extends RelationManager
                     ->url()
                     ->visible(fn (Get $get) => $get('type') === 'url')
                     ->required(fn (Get $get) => $get('type') === 'url'),
-            ])
+                     Forms\Components\Select::make('video_batch_id')
+                                    ->label('Batch')
+                                    ->relationship(
+                                        'batch',
+                                        'name',
+                                        fn (Builder $query) =>
+                                        $query->where('course_id', $this->ownerRecord->id)
+                                    )
+                                    ->searchable()
+                                    ->preload()
+                                    ->columnSpan(1),
+
+                    ])
     ])
                     ->visible(fn (Get $get) => in_array($get('type'), ['text', 'assignment','video']))
                     ->compact(),

@@ -86,6 +86,15 @@ class LessonModuleController extends Controller
                                     return is_null($lesson->batch_id) || $lesson->batch_id == $userBatchId;
                                 })
                                 ->map(function ($lesson) {
+
+                                    $filteredFiles = collect($lesson->files)->filter(function ($file) use ($userBatchId) {
+                                        // If video_batch_id is not set, show the file to everyone
+                                        // If video_batch_id is set, only show to matching batch
+                                        return !isset($file['video_batch_id'])
+                                            || $file['video_batch_id'] === null
+                                            || $file['video_batch_id'] == $userBatchId;
+                                    })->values()->toArray();
+
                                     return [
                                         'id' => $lesson->id,
                                         'title' => $lesson->title,
@@ -97,7 +106,7 @@ class LessonModuleController extends Controller
                                         'is_free' => $lesson->is_free,
                                         'content' => $lesson->content,
                                         'questions' => $lesson->questions,
-                                        'files' => $lesson->files,
+                                        'files' => $filteredFiles,
                                     ];
                                 })
                                 ->values() // ← Reset array keys after filtering
