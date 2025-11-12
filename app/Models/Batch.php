@@ -82,4 +82,9 @@ class Batch extends Model
     {
         return $this->hasMany(ExamResponse::class, 'batch_id');
     }
+
+    public function classRoutine()
+    {
+        return $this->hasOne(ClassRoutine::class);
+    }
 }
