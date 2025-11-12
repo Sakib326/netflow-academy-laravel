@@ -43,6 +43,83 @@ class UserCourseManagementController extends Controller
             new OA\Property(property: "next_class_time", type: "string", format: "date-time", nullable: true),
         ]
     )]
+
+    #[OA\Get(
+        path: "/api/my-courses",
+        summary: "Get user's enrolled courses",
+        description: "Retrieve all courses the authenticated user is enrolled in with pagination support",
+        tags: ["User Courses"],
+        parameters: [
+          new OA\Parameter(
+              name: "per_page",
+              description: "Number of records per page (max 20)",
+              in: "query",
+              required: false,
+              schema: new OA\Schema(type: "integer", default: 10)
+          ),
+          new OA\Parameter(
+              name: "page",
+              description: "Page number",
+              in: "query",
+              required: false,
+              schema: new OA\Schema(type: "integer", default: 1)
+          ),
+          new OA\Parameter(
+              name: "status",
+              description: "Filter by enrollment status",
+              in: "query",
+              required: false,
+              schema: new OA\Schema(
+                  type: "string",
+                  enum: ["active", "completed", "dropped", "suspended", "pending"]
+              )
+          ),
+        ],
+        security: [["sanctum" => []]],
+        responses: [
+          new OA\Response(
+              response: 200,
+              description: "Successfully retrieved enrolled courses",
+              content: new OA\JsonContent(
+                  type: "object",
+                  properties: [
+                      new OA\Property(
+                          property: "data",
+                          type: "array",
+                          items: new OA\Items(ref: "#/components/schemas/EnrolledCourse")
+                      ),
+                      new OA\Property(
+                          property: "links",
+                          type: "object",
+                          properties: [
+                              new OA\Property(property: "first", type: "string", example: "http://example.com/api/my-courses?page=1"),
+                              new OA\Property(property: "last", type: "string", example: "http://example.com/api/my-courses?page=5"),
+                              new OA\Property(property: "prev", type: "string", nullable: true),
+                              new OA\Property(property: "next", type: "string", nullable: true),
+                          ]
+                      ),
+                      new OA\Property(
+                          property: "meta",
+                          type: "object",
+                          properties: [
+                              new OA\Property(property: "current_page", type: "integer", example: 1),
+                              new OA\Property(property: "from", type: "integer", example: 1),
+                              new OA\Property(property: "last_page", type: "integer", example: 5),
+                              new OA\Property(property: "per_page", type: "integer", example: 10),
+                              new OA\Property(property: "to", type: "integer", example: 10),
+                              new OA\Property(property: "total", type: "integer", example: 50),
+                          ]
+                      ),
+                  ]
+              )
+          ),
+          new OA\Response(
+              response: 401,
+              description: "Unauthenticated"
+          ),
+        ]
+    )]
+
     public function myCourses(Request $request)
     {
         $user = $request->user();
@@ -50,6 +127,7 @@ class UserCourseManagementController extends Controller
 
         $query = Enrollment::with([
             'batch',
+            'batch.classRoutine', // ✅ ADD THIS
             'course.category',
             'course.instructor',
             'user'
@@ -94,6 +172,19 @@ class UserCourseManagementController extends Controller
                 }
             }
 
+            // ✅ Build class routine data
+            $classRoutine = null;
+            if ($batch && $batch->classRoutine) {
+                $classRoutine = [
+                    'id' => $batch->classRoutine->id,
+                    'days' => $batch->classRoutine->days,
+                    'off_dates' => $batch->classRoutine->off_dates,
+                    'is_class_today' => $batch->classRoutine->isClassToday(),
+                    'is_off_today' => $batch->classRoutine->isOffToday(),
+                    'today_class_time' => $batch->classRoutine->getTodayClassTime(),
+                ];
+            }
+
             return [
                 'enrollment_id' => $enrollment->id,
                 'enrollment_date' => $enrollment->created_at,
@@ -114,6 +205,7 @@ class UserCourseManagementController extends Controller
                     'timezone' => $batch->timezone ?? 'UTC',
                     'days_until_start' => $batch->start_date ? Carbon::parse($batch->start_date)->diffInDays($now, false) : null,
                     'days_until_end' => $batch->end_date ? Carbon::parse($batch->end_date)->diffInDays($now, false) : null,
+                    'class_routine' => $classRoutine, // ✅ ADD THIS
                 ] : null,
                 'course' => [
                     'id' => $course->id,
