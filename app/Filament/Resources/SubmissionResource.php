@@ -205,7 +205,14 @@ class SubmissionResource extends Resource
                         if ($record->score === null) {
                             return 'gray';
                         }
-                        $percentage = ($record->score / ($record->max_score ?? 100)) * 100;
+
+                        // Use a variable for max_score and handle the zero case
+                        $maxScore = $record->max_score ?? 100;
+                        if ($maxScore == 0) {
+                            return 'gray'; // Avoid division by zero
+                        }
+
+                        $percentage = ($record->score / $maxScore) * 100;
                         return match (true) {
                             $percentage >= 90 => 'green',
                             $percentage >= 80 => 'blue',
