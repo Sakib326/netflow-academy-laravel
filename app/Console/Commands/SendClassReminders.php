@@ -31,7 +31,8 @@ class SendClassReminders extends Command
             // Check if today has a class and if it's 30 minutes before start time
             foreach ($routine->days as $daySchedule) {
                 if ($daySchedule['day'] === $currentDay) {
-                    $classStartTime = Carbon::createFromFormat('H:i', $daySchedule['start_time']);
+
+                    $classStartTime = Carbon::createFromFormat('H:i:s', $daySchedule['start_time']);
                     $classStartTime->setDate($now->year, $now->month, $now->day);
 
                     // Check if current time is 30 minutes before class (within 1 minute tolerance)
